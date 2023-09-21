@@ -1,5 +1,5 @@
 import gpxpy
-import gpxpy.gpx\
+import gpxpy.gpx
 
 gpx_file = open("gpx/Kill_Hawk_Hill.gpx", "r")
 VIDEO_START = 1692683982
@@ -58,11 +58,7 @@ def add_extension_data_to_coordinates(coordinates):
             power = int(power.text)
 
         coordinate = {**coordinate, "power": power, "temp": temp, "hr": hr, "cad": cad}
-<<<<<<< HEAD
         del coordinate["point"]
-=======
-        del coordinate['point']
->>>>>>> 2ea493af226f5ed4ecc135bb918a8f5230cea1b8
         coordinates_with_metadata.append(coordinate)
     return coordinates_with_metadata
 
