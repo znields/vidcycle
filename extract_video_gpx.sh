@@ -1,0 +1,1 @@
+exiftool -p gpx.fmt -ee -api largefilesupport=1 videos/GX010016.MP4

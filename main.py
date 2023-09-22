@@ -1,13 +1,22 @@
 import gpxpy
 import gpxpy.gpx
+import argparse
 
-gpx_file = open("gpx/Kill_Hawk_Hill.gpx", "r")
-VIDEO_START = 1692683982
+parser = argparse.ArgumentParser(
+    description="Program to add metadata to cycling video from GoPro"
+)
+parser.add_argument("--gpx-file", help="GPX file of ride", required=True)
+parser.add_argument("--video-file", help="Video file of ride", required=True)
+args = vars(parser.parse_args())
 
-gpx = gpxpy.parse(gpx_file)
+
+def load_gpx_file():
+    gpx_file = open(args["gpx_file"], "r")
+    gpx = gpxpy.parse(gpx_file)
+    return gpx
 
 
-def get_coordinates_from_zero():
+def get_data_from_gpx(gpx):
     coordinates = []
     for track in gpx.tracks:
         for segment in track.segments:
@@ -63,5 +72,7 @@ def add_extension_data_to_coordinates(coordinates):
     return coordinates_with_metadata
 
 
-for coord in get_coordinates_from_zero():
-    print(coord)
+if __name__ == "__main__":
+    gpx = load_gpx_file()
+    for datum in get_data_from_gpx(gpx):
+        print(datum)
