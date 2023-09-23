@@ -161,3 +161,5 @@ cython_debug/
 
 *.gpx
 *.mp4
+
+.DS_Store

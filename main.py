@@ -1,6 +1,10 @@
 import gpxpy
 import gpxpy.gpx
 import argparse
+import subprocess
+from datetime import datetime, timezone
+from moviepy import *
+
 
 parser = argparse.ArgumentParser(
     description="Program to add metadata to cycling video from GoPro"
@@ -72,7 +76,32 @@ def add_extension_data_to_coordinates(coordinates):
     return coordinates_with_metadata
 
 
+def fetch_mp4_exif_data():
+    output = subprocess.run(
+        ["exiftool", "-api", "largefilesupport=1", args["video_file"]],
+        capture_output=True,
+    )
+    out = output.stdout
+    out = [[str(j).strip() for j in i.split(":", 1)] for i in str(out).split("\\n")]
+    out = [i for i in out if len(i) == 2]
+    return dict(out)
+
+
+def get_video_start_timestamp(exif_data):
+    video_start_time = datetime.strptime(
+        exif_data["Track Create Date"], "%Y:%m:%d %H:%M:%S"
+    )
+    video_start_time = video_start_time.replace(tzinfo=timezone.utc)
+    return datetime.timestamp(video_start_time)
+
+
 if __name__ == "__main__":
+    data = fetch_mp4_exif_data()
+    start_timestamp = get_video_start_timestamp(data)
+    print(start_timestamp)
+
     gpx = load_gpx_file()
-    for datum in get_data_from_gpx(gpx):
-        print(datum)
+    data = [
+        datum for datum in get_data_from_gpx(gpx) if datum["time"] > start_timestamp
+    ]
+    print(len(data))
