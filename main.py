@@ -191,9 +191,6 @@ if __name__ == "__main__":
         ]
     ).subclip(0, subclip_range[1] - subclip_range[0])
 
-    for coordinate in coordinates:
-        print(coordinate["duration"])
-
     video = CompositeVideoClip([clip, text_clip])
 
     video.write_videofile("out.mp4")
