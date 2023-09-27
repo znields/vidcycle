@@ -140,15 +140,57 @@ def get_video_time_range(start_timestamp, end_timestamp):
     return subclip_start, subclip_end
 
 
-def filter_coordinates_and_fix_edge_coordinates(
-    coordinates, adjusted_start_timestamp, adjusted_end_timestamp
-):
+def filter_coordinates(coordinates, adjusted_start_timestamp, adjusted_end_timestamp):
     filtered_coordinates = []
-    for coordinate in coordinates:
-        if adjusted_end_timestamp >= coordinate["time"] >= adjusted_start_timestamp:
+    first_coordinate_idx = last_coordinate_idx = None
+    for idx, coordinate in enumerate(coordinates):
+        if adjusted_end_timestamp > coordinate["time"] >= adjusted_start_timestamp:
             filtered_coordinates.append(coordinate)
+            if first_coordinate_idx is None:
+                first_coordinate_idx = idx
+            last_coordinate_idx = idx
         elif True:
             pass
+
+    def get_first_coordinate():
+        if (
+            first_coordinate_idx is not None
+            and filtered_coordinates[0]["time"] > adjusted_start_timestamp
+        ):
+            first_coordinate = coordinates[first_coordinate_idx - 1]
+            first_coordinate["time"], first_coordinate["duration"] = (
+                adjusted_start_timestamp,
+                first_coordinate["time"] - adjusted_start_timestamp,
+            )
+            return first_coordinate
+
+        return None
+
+    def get_last_coordinate():
+        if (
+            last_coordinate_idx is not None
+            and filtered_coordinates[-1]["time"] + filtered_coordinates[-1]["duration"]
+            > adjusted_end_timestamp
+        ):
+            last_coordinate = coordinates[last_coordinate_idx + 1]
+            last_coordinate["time"] = (
+                filtered_coordinates[-1]["time"] + filtered_coordinates[-1]["duration"]
+            )
+            last_coordinate["duration"] = (
+                adjusted_end_timestamp - last_coordinate["time"]
+            )
+            return last_coordinate
+
+        return None
+
+    first_coordinate = get_first_coordinate()
+    last_coordinate = get_last_coordinate()
+
+    if first_coordinate is not None:
+        filtered_coordinates.insert(0, first_coordinate)
+
+    if last_coordinate is not None:
+        filtered_coordinates.append(last_coordinate)
 
     return filtered_coordinates
 
@@ -164,6 +206,9 @@ if __name__ == "__main__":
     gpx_data = load_gpx_file()
 
     coordinates = get_coordinates_from_gpx(gpx_data)
+    coordinates = filter_coordinates(
+        coordinates, adjusted_start_timestamp, adjusted_end_timestamp
+    )
 
     print(
         f"Found {len(coordinates)} coordinates between times {adjusted_start_timestamp} "
@@ -180,17 +225,24 @@ if __name__ == "__main__":
         f"to {subclip_range[1]}"
     )
 
-    clip = VideoFileClip(args["video_file"]).subclip(*subclip_range)
+    clip = VideoFileClip(args["video_file"]).resize(height=1080).subclip(*subclip_range)
 
-    text_clip = concatenate_videoclips(
-        [
-            TextClip(str(coordinate["time"]), fontsize=70, color="white")
-            .set_pos(("right", "top"))
-            .set_duration(coordinate["duration"])
-            for coordinate in coordinates
-        ]
-    ).subclip(0, subclip_range[1] - subclip_range[0])
+    stat_clips = [
+        concatenate_videoclips(
+            [
+                TextClip(str(coordinate[key]), fontsize=70, color="white").set_duration(
+                    coordinate["duration"]
+                )
+                for coordinate in coordinates
+            ]
+        )
+        .subclip(0, subclip_range[1] - subclip_range[0])
+        .set_position((0.01, idx / 10), relative=True)
+        for idx, key in enumerate(
+            ["time", "power", "hr", "cad", "elevation", "latitude", "longitude"], 1
+        )
+    ]
 
-    video = CompositeVideoClip([clip, text_clip])
+    video = CompositeVideoClip([clip] + stat_clips)
 
     video.write_videofile("out.mp4")
