@@ -14,9 +14,16 @@ parser = argparse.ArgumentParser(
 parser.add_argument("--fit-file", help="GPX file of ride", required=True)
 parser.add_argument("--video-file", help="Video file of ride", required=True)
 parser.add_argument(
-    "--seconds-to-explore-shift",
+    "--gps-align-explore-range-in-secs",
     help="Range of number of seconds to search for GPS alignment (low -> high)",
     nargs=2,
+    type=float,
+    required=True,
+)
+parser.add_argument(
+    "--gps-align-step-size-in-secs",
+    help="Step size for gps alignment in seconds",
+    default=0.5,
     type=float,
     required=True,
 )
@@ -35,7 +42,12 @@ if __name__ == "__main__":
     min_segment_distance = float("inf")
     best_shift_seconds = None
 
-    for shift_seconds in tqdm(arange(*args["seconds_to_explore_shift"], 0.5)):
+    for shift_seconds in tqdm(
+        arange(
+            *args["gps_align_explore_range_in_secs"],
+            args["gps_align_step_size_in_secs"]
+        )
+    ):
         segment_distance = calculate_segment_distance(
             garmin_segment,
             go_pro_segment,
@@ -46,4 +58,4 @@ if __name__ == "__main__":
             min_segment_distance = segment_distance
             best_shift_seconds = shift_seconds
 
-    print(min_segment_distance, shift_seconds)
+    print(min_segment_distance, best_shift_seconds)
