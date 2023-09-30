@@ -1,9 +1,8 @@
 import argparse
 from moviepy import *
 from moviepy.editor import *
-import garmin
 import go_pro
-from coordinate import Segment, calculate_segment_distance
+from coordinate import Segment, calculate_segment_distance, GarminCoordinate, Coordinate
 from datetime import timedelta
 from tqdm import tqdm
 from numpy import arange
@@ -31,8 +30,10 @@ args = vars(parser.parse_args())
 
 
 if __name__ == "__main__":
-    garmin_coordinates = garmin.load_coordinates_from_file(args["fit_file"])
-    go_pro_coordinates = go_pro.load_coordinates_from_file(args["video_file"])
+    garmin_coordinates = GarminCoordinate.load_coordinates_from_fit_file(
+        args["fit_file"]
+    )
+    go_pro_coordinates = Coordinate.load_coordinates_from_video_file(args["video_file"])
 
     start, end = go_pro.get_start_and_end_time(args["video_file"])
 
@@ -40,7 +41,7 @@ if __name__ == "__main__":
     go_pro_segment = Segment(go_pro_coordinates)
 
     min_segment_distance = float("inf")
-    best_shift_seconds = None
+    best_shift_seconds = None  # TODO: improve name
 
     for shift_seconds in tqdm(
         arange(

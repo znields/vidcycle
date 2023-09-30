@@ -1,33 +1,6 @@
 import subprocess
-import gpxpy
 from typing import List, Tuple
 from datetime import datetime, timezone, timedelta
-from coordinate import Coordinate
-
-
-def load_coordinates_from_file(video_file_path: str) -> List[Coordinate]:
-    output = subprocess.run(
-        [
-            "exiftool",
-            "-ee",
-            "-p",
-            "gpx.fmt",
-            "-api",
-            "largefilesupport=1",
-            video_file_path,
-        ],
-        capture_output=True,
-    )
-    out = output.stdout
-    gpx = gpxpy.parse(out)
-    points = gpx.tracks[0].segments[0].points
-    return [
-        Coordinate(
-            timestamp=point.time, latitude=point.latitude, longitude=point.longitude
-        )
-        for point in points
-        if point.latitude != 0 and point.longitude != 0
-    ]
 
 
 def load_exif_data(video_file_path: str):
