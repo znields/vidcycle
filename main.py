@@ -41,7 +41,7 @@ if __name__ == "__main__":
     go_pro_segment = Segment(go_pro_coordinates)
 
     min_segment_distance = float("inf")
-    best_shift_seconds = None  # TODO: improve name
+    best_shift_in_seconds = None  # TODO: improve name
 
     for shift_seconds in tqdm(
         arange(
@@ -57,6 +57,6 @@ if __name__ == "__main__":
         )
         if min_segment_distance >= segment_distance:
             min_segment_distance = segment_distance
-            best_shift_seconds = shift_seconds
+            best_shift_in_seconds = shift_seconds
 
-    print(min_segment_distance, best_shift_seconds)
+    print(min_segment_distance, best_shift_in_seconds)
