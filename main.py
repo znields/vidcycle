@@ -6,6 +6,7 @@ from coordinate import Segment, calculate_segment_distance, GarminCoordinate, Co
 from datetime import timedelta
 from tqdm import tqdm
 from numpy import arange
+import render
 
 parser = argparse.ArgumentParser(
     description="Program to add metadata to cycling video from GoPro"
@@ -33,6 +34,18 @@ parser.add_argument(
     type=float,
     required=True,
 )
+parser.add_argument(
+    "--video-length-in-secs",
+    help="How many seconds the video should last",
+    type=float,
+    required=True,
+)
+parser.add_argument(
+    "--video-offset-start-in-secs",
+    help="How many seconds into the video should the output start",
+    default=0.0,
+    type=float,
+)
 args = vars(parser.parse_args())
 
 
@@ -51,12 +64,12 @@ if __name__ == "__main__":
     go_pro_segment = Segment(go_pro_coordinates, video_stats_refresh_rate)
 
     min_segment_distance = float("inf")
-    best_shift_in_seconds = None  # TODO: improve name
+    best_shift_in_seconds = args["gps_align_explore_range_in_secs"][0]
 
     for shift_seconds in tqdm(
         arange(
             *args["gps_align_explore_range_in_secs"],
-            args["gps_align_step_size_in_secs"]
+            args["gps_align_step_size_in_secs"],
         )
     ):
         segment_distance = calculate_segment_distance(
@@ -68,4 +81,25 @@ if __name__ == "__main__":
             min_segment_distance = segment_distance
             best_shift_in_seconds = shift_seconds
 
-    print(min_segment_distance, best_shift_in_seconds)
+    print(
+        f"Based on GPS data Garmin is {abs(best_shift_in_seconds)} seconds {'ahead of' if best_shift_in_seconds > 0 else 'behind'} GoPro"
+    )
+    best_shift = timedelta(seconds=best_shift_in_seconds)
+
+    video_length = timedelta(seconds=args["video_length_in_secs"])
+    video_offset = timedelta(seconds=args["video_offset_start_in_secs"])
+
+    video_start_time = go_pro_segment.get_start_time() + best_shift + video_offset
+    video_end_time = video_start_time + video_length
+
+    render.write_video(
+        args["video_file"],
+        "out.mp4",
+        1080,
+        garmin_segment.get_subsegment(
+            video_start_time,
+            video_end_time,
+        ),
+        args["video_length_in_secs"],
+        args["video_offset_start_in_secs"],
+    )

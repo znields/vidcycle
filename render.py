@@ -9,34 +9,45 @@ def write_video(
     in_video_path: str,
     out_video_path: str,
     render_height: int,
-    video_start_time: datetime,
-    video_end_time: datetime,
-    coordinates: List[GarminCoordinate],
-    stats_refresh_period_in_seconds: int = 0.5,
+    video_segment: Segment,
+    video_length: float,
+    video_offset: float,
 ) -> None:
-    clip = VideoFileClip(in_video_path).resize(height=render_height)
-    # TODO pull subclips
+    clip = (
+        VideoFileClip(in_video_path)
+        .resize(height=render_height)
+        .subclip(video_offset, video_offset + video_length)
+    )
 
-    stat_clips = [
-        concatenate_videoclips(
-            [
-                TextClip(str(coordinate[key]), fontsize=70, color="white").set_duration(
-                    stats_refresh_period_in_seconds
-                )
-                for coordinate in coordinates
-            ]
+    stat_clips = []
+    for idx, key in enumerate(
+        [
+            "timestamp",
+            "speed",
+            "power",
+            "heart_rate",
+            "cadence",
+            "altitude",
+            "latitude",
+            "longitude",
+        ],
+        1,
+    ):
+        text_clips = []
+        for coordinate in video_segment:
+            text_clip = TextClip(
+                str(coordinate.__dict__[key]), fontsize=70, color="white"
+            ).set_duration(video_segment.iterator_step_length.total_seconds())
+            text_clips.append(text_clip)
+
+        stat_clip = (
+            concatenate_videoclips(text_clips)
+            .set_position((0.01, idx / 10), relative=True)
+            .subclip(0, video_length)
         )
-        .subclip(0, subclip_range[1] - subclip_range[0])
-        .set_position((0.01, idx / 10), relative=True)
-        for idx, key in enumerate(
-            ["time", "power", "hr", "cad", "elevation", "latitude", "longitude"], 1
-        )
-    ]
 
-    # video = CompositeVideoClip([clip] + stat_clips)
+        stat_clips.append(stat_clip)
 
-    # video.write_videofile(out_video_path)
+    video = CompositeVideoClip([clip] + stat_clips)
 
-
-def get_stats_clip(garmin_segment: Segment, stats_refresh_period_in_seconds: int):
-    pass
+    video.write_videofile(out_video_path)

@@ -196,6 +196,14 @@ class Segment:
     def __iter__(self):
         return SegmentIterator(self, self.iterator_step_length)
 
+    def get_subsegment(self, start_time: datetime, end_time: datetime):
+        new_coordinates = []
+        while start_time <= end_time:
+            new_coordinates.append(self.get_coordinate(start_time))
+            start_time += self.iterator_step_length
+
+        return Segment(new_coordinates, self.iterator_step_length)
+
 
 class SegmentIterator:
     def __init__(self, segment: Segment, iterator_step_length: timedelta) -> None:
