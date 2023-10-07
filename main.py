@@ -84,6 +84,9 @@ if __name__ == "__main__":
     print(
         f"Based on GPS data Garmin is {abs(best_shift_in_seconds)} seconds {'ahead of' if best_shift_in_seconds > 0 else 'behind'} GoPro"
     )
+    print(
+        f"Average GPS distance between Garmin and GoPro is {min_segment_distance * 1000:.2f} meters"
+    )
     best_shift = timedelta(seconds=best_shift_in_seconds)
 
     video_length = timedelta(seconds=args["video_length_in_secs"])
