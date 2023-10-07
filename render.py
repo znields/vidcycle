@@ -1,7 +1,8 @@
 from moviepy import *
 from moviepy.editor import *
 from datetime import datetime
-from coordinate import Segment
+from coordinate import Segment, GarminCoordinate
+from typing import List
 
 
 def write_video(
@@ -10,7 +11,7 @@ def write_video(
     render_height: int,
     video_start_time: datetime,
     video_end_time: datetime,
-    garmin_segment: Segment,
+    coordinates: List[GarminCoordinate],
     stats_refresh_period_in_seconds: int = 0.5,
 ) -> None:
     clip = VideoFileClip(in_video_path).resize(height=render_height)
@@ -20,7 +21,7 @@ def write_video(
         concatenate_videoclips(
             [
                 TextClip(str(coordinate[key]), fontsize=70, color="white").set_duration(
-                    coordinate["duration"]
+                    stats_refresh_period_in_seconds
                 )
                 for coordinate in coordinates
             ]

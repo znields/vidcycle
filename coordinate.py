@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import json
 from typing import List, Optional, Dict, Any
 import geopy.distance
@@ -32,7 +32,7 @@ class Coordinate:
             timestamp=datetime.fromtimestamp(
                 (self.timestamp.timestamp() * self_weight)
                 + (other_coordinate.timestamp.timestamp() * other_weight)
-            ),
+            ).replace(tzinfo=self.timestamp.tzinfo),
             latitude=(self.latitude * self_weight)
             + (other_coordinate.latitude * other_weight),
             longitude=(self.longitude * self_weight)
@@ -63,7 +63,9 @@ class Coordinate:
         points = gpx.tracks[0].segments[0].points
         return [
             Coordinate(
-                timestamp=point.time, latitude=point.latitude, longitude=point.longitude
+                timestamp=point.time,
+                latitude=point.latitude,
+                longitude=point.longitude,
             )
             for point in points
             if point.latitude != 0 and point.longitude != 0
@@ -151,7 +153,9 @@ class GarminCoordinate(Coordinate):
 
 
 class Segment:
-    def __init__(self, coordinates: List[Coordinate]) -> None:
+    def __init__(
+        self, coordinates: List[Coordinate], iterator_step_length: timedelta
+    ) -> None:
         reversed_coordinates = []
         for coordinate in coordinates[::-1]:
             if (
@@ -164,6 +168,7 @@ class Segment:
             ):
                 reversed_coordinates.append(coordinate)
         self.coordinates = reversed_coordinates[::-1]
+        self.iterator_step_length = iterator_step_length
 
     @functools.lru_cache(maxsize=None)
     def get_coordinate(self, time: datetime) -> Optional[Coordinate]:
@@ -185,32 +190,38 @@ class Segment:
     def get_length(self) -> timedelta:
         return self.get_end_time() - self.get_start_time()
 
+    def __iter__(self):
+        self.iterator_time: datetime = self.get_start_time()
+        return self
+
+    def __next__(self) -> Coordinate:
+        self.iterator_time += self.iterator_step_length
+        coordinate = self.get_coordinate(self.iterator_time)
+
+        if coordinate is None:
+            raise StopIteration
+
+        return coordinate
+
 
 def calculate_segment_distance(
     garmin_segment: Segment,
     go_pro_segment: Segment,
-    step: timedelta,
     go_pro_start_offset: timedelta,
 ) -> float:
-    start_time = go_pro_segment.get_start_time()
-    end_time = go_pro_segment.get_end_time()
-
     total_distance = 0.0
     num_points = 0
-    while start_time <= end_time:
-        garmin_coorindate = garmin_segment.get_coordinate(start_time)
-        go_pro_coordinate = go_pro_segment.get_coordinate(
-            start_time + go_pro_start_offset
-        )
 
-        if garmin_coorindate is None or go_pro_coordinate is None:
+    for go_pro_coordinate in go_pro_segment:
+        garmin_coorindate = garmin_segment.get_coordinate(
+            go_pro_coordinate.timestamp + go_pro_start_offset
+        )
+        if garmin_coorindate is None:
             if num_points != 0:
                 break
-            start_time += step
             continue
 
         total_distance += Coordinate.distance(garmin_coorindate, go_pro_coordinate)
         num_points += 1
-        start_time += step
 
     return total_distance / num_points

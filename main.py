@@ -26,6 +26,13 @@ parser.add_argument(
     type=float,
     required=True,
 )
+parser.add_argument(
+    "--video-stats-refresh-rate-in-secs",
+    help="How often the video stats refresh in seconds",
+    default=0.5,
+    type=float,
+    required=True,
+)
 args = vars(parser.parse_args())
 
 
@@ -37,8 +44,11 @@ if __name__ == "__main__":
 
     start, end = go_pro.get_start_and_end_time(args["video_file"])
 
-    garmin_segment = Segment(garmin_coordinates)
-    go_pro_segment = Segment(go_pro_coordinates)
+    video_stats_refresh_rate = timedelta(
+        seconds=args["video_stats_refresh_rate_in_secs"]
+    )
+    garmin_segment = Segment(garmin_coordinates, video_stats_refresh_rate)
+    go_pro_segment = Segment(go_pro_coordinates, video_stats_refresh_rate)
 
     min_segment_distance = float("inf")
     best_shift_in_seconds = None  # TODO: improve name
@@ -52,7 +62,6 @@ if __name__ == "__main__":
         segment_distance = calculate_segment_distance(
             garmin_segment,
             go_pro_segment,
-            timedelta(seconds=0.5),
             timedelta(seconds=shift_seconds),
         )
         if min_segment_distance >= segment_distance:
