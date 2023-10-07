@@ -28,11 +28,14 @@ class Coordinate:
         assert 0.0 <= other_weight <= 1.0
         self_weight = 1.0 - other_weight
 
+        assert self.timestamp.tzinfo == other_coordinate.timestamp.tzinfo
+
         return Coordinate(
             timestamp=datetime.fromtimestamp(
                 (self.timestamp.timestamp() * self_weight)
-                + (other_coordinate.timestamp.timestamp() * other_weight)
-            ).replace(tzinfo=self.timestamp.tzinfo),
+                + (other_coordinate.timestamp.timestamp() * other_weight),
+                tz=self.timestamp.tzinfo,
+            ),
             latitude=(self.latitude * self_weight)
             + (other_coordinate.latitude * other_weight),
             longitude=(self.longitude * self_weight)
@@ -191,12 +194,22 @@ class Segment:
         return self.get_end_time() - self.get_start_time()
 
     def __iter__(self):
-        self.iterator_time: datetime = self.get_start_time()
+        return SegmentIterator(self, self.iterator_step_length)
+
+
+class SegmentIterator:
+    def __init__(self, segment: Segment, iterator_step_length: timedelta) -> None:
+        self.segment = segment
+        self.iterator_step_length = iterator_step_length
+        self.iterator_time = self.segment.get_start_time()
+
+    def __iter__(self):
+        self.iterator_time = self.segment.get_start_time()
         return self
 
     def __next__(self) -> Coordinate:
+        coordinate = self.segment.get_coordinate(self.iterator_time)
         self.iterator_time += self.iterator_step_length
-        coordinate = self.get_coordinate(self.iterator_time)
 
         if coordinate is None:
             raise StopIteration
@@ -224,4 +237,4 @@ def calculate_segment_distance(
         total_distance += Coordinate.distance(garmin_coorindate, go_pro_coordinate)
         num_points += 1
 
-    return total_distance / num_points
+    return total_distance / num_points if num_points != 0 else float("inf")
