@@ -6,6 +6,8 @@ import functools
 from garmin_fit_sdk import Decoder, Stream
 import subprocess
 import gpxpy
+import csv
+from copy import copy
 
 
 class Coordinate:
@@ -19,16 +21,20 @@ class Coordinate:
         self.latitude = latitude
         self.longitude = longitude
 
+    def __copy__(self) -> "Coordinate":
+        return type(self)(self.timestamp, self.latitude, self.longitude)
+
     def __str__(self) -> str:
         return json.dumps(self.__dict__, indent=4, default=str)
+
+    def set_timestamp(self, timestamp: datetime):
+        self.timestamp = timestamp
 
     def weighted_average(
         self, other_coordinate: "Coordinate", other_weight: float
     ) -> "Coordinate":
         assert 0.0 <= other_weight <= 1.0
         self_weight = 1.0 - other_weight
-
-        assert self.timestamp.tzinfo == other_coordinate.timestamp.tzinfo
 
         return Coordinate(
             timestamp=datetime.fromtimestamp(
@@ -92,6 +98,9 @@ class GarminCoordinate(Coordinate):
         cadence: Optional[int] = None,
         **_kwargs: Dict[str, Any]
     ):
+        self.position_lat = position_lat
+        self.position_long = position_long
+
         if position_lat is not None:
             position_lat /= self.INT_TO_FLOAT_LAT_LONG_CONST
         if position_long is not None:
@@ -106,6 +115,20 @@ class GarminCoordinate(Coordinate):
         self.temperature = temperature
         self.power = power
         self.cadence = cadence
+
+    def __copy__(self) -> "GarminCoordinate":
+        return type(self)(
+            self.timestamp,
+            self.distance,
+            self.altitude,
+            self.temperature,
+            self.heart_rate,
+            self.speed,
+            self.position_lat,
+            self.position_long,
+            self.power,
+            self.cadence,
+        )
 
     def __str__(self) -> str:
         return json.dumps(self.__dict__, indent=4, default=str)
@@ -156,9 +179,7 @@ class GarminCoordinate(Coordinate):
 
 
 class Segment:
-    def __init__(
-        self, coordinates: List[Coordinate], iterator_step_length: timedelta
-    ) -> None:
+    def __init__(self, coordinates: List[Coordinate]) -> None:
         reversed_coordinates = []
         for coordinate in coordinates[::-1]:
             if (
@@ -170,19 +191,30 @@ class Segment:
                 )
             ):
                 reversed_coordinates.append(coordinate)
-        self.coordinates = reversed_coordinates[::-1]
-        self.iterator_step_length = iterator_step_length
+        self.coordinates: List[Coordinate] = reversed_coordinates[::-1]
 
     @functools.lru_cache(maxsize=None)
     def get_coordinate(self, time: datetime) -> Optional[Coordinate]:
+        result = None
+
         for a, b in zip(self.coordinates[:-1], self.coordinates[1:]):
             if a.timestamp <= time <= b.timestamp:
                 a_timestamp = a.timestamp.timestamp()
                 b_timestamp = b.timestamp.timestamp()
-                weight = (b_timestamp - time.timestamp()) / (b_timestamp - a_timestamp)
-                return a.weighted_average(b, 1.0 - weight)
 
-        return None
+                time_delta = b_timestamp - a_timestamp
+                if time_delta < 0.0001 or time_delta > 1.5:
+                    result = copy(a)
+                    break
+
+                weight = (b_timestamp - time.timestamp()) / (b_timestamp - a_timestamp)
+                result = a.weighted_average(b, 1.0 - weight)
+                break
+
+        if result is not None:
+            result.set_timestamp(time)
+
+        return result
 
     def get_start_time(self) -> datetime:
         return self.coordinates[0].timestamp
@@ -193,16 +225,29 @@ class Segment:
     def get_length(self) -> timedelta:
         return self.get_end_time() - self.get_start_time()
 
-    def __iter__(self):
-        return SegmentIterator(self, self.iterator_step_length)
+    def get_iterator(self, iterator_step_length: timedelta):
+        return SegmentIterator(self, iterator_step_length)
 
-    def get_subsegment(self, start_time: datetime, end_time: datetime):
+    def get_subsegment(
+        self, start_time: datetime, end_time: datetime, step_length: timedelta
+    ):
         new_coordinates = []
         while start_time <= end_time:
             new_coordinates.append(self.get_coordinate(start_time))
-            start_time += self.iterator_step_length
+            start_time += step_length
 
-        return Segment(new_coordinates, self.iterator_step_length)
+        return Segment(new_coordinates)
+
+    def write_to_csv(self, file_path):
+        with open(file_path, "w") as csvfile:
+            writer = csv.writer(csvfile)
+
+            for coordinate in self.coordinates:
+                writer.writerow(
+                    [coordinate.timestamp, coordinate.latitude, coordinate.longitude]
+                )
+
+        csvfile.close()
 
 
 class SegmentIterator:
@@ -229,11 +274,12 @@ def calculate_segment_distance(
     garmin_segment: Segment,
     go_pro_segment: Segment,
     go_pro_start_offset: timedelta,
+    gps_align_step_size: timedelta,
 ) -> float:
     total_distance = 0.0
     num_points = 0
 
-    for go_pro_coordinate in go_pro_segment:
+    for go_pro_coordinate in go_pro_segment.get_iterator(gps_align_step_size):
         garmin_coorindate = garmin_segment.get_coordinate(
             go_pro_coordinate.timestamp + go_pro_start_offset
         )

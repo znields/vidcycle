@@ -57,11 +57,8 @@ if __name__ == "__main__":
 
     start, end = go_pro.get_start_and_end_time(args["video_file"])
 
-    video_stats_refresh_rate = timedelta(
-        seconds=args["video_stats_refresh_rate_in_secs"]
-    )
-    garmin_segment = Segment(garmin_coordinates, video_stats_refresh_rate)
-    go_pro_segment = Segment(go_pro_coordinates, video_stats_refresh_rate)
+    garmin_segment = Segment(garmin_coordinates)
+    go_pro_segment = Segment(go_pro_coordinates)
 
     min_segment_distance = float("inf")
     best_shift_in_seconds = args["gps_align_explore_range_in_secs"][0]
@@ -76,6 +73,7 @@ if __name__ == "__main__":
             garmin_segment,
             go_pro_segment,
             timedelta(seconds=shift_seconds),
+            timedelta(seconds=args["gps_align_step_size_in_secs"]),
         )
         if min_segment_distance >= segment_distance:
             min_segment_distance = segment_distance
@@ -91,6 +89,9 @@ if __name__ == "__main__":
 
     video_length = timedelta(seconds=args["video_length_in_secs"])
     video_offset = timedelta(seconds=args["video_offset_start_in_secs"])
+    video_stats_refresh_rate = timedelta(
+        seconds=args["video_stats_refresh_rate_in_secs"]
+    )
 
     video_start_time = go_pro_segment.get_start_time() + best_shift + video_offset
     video_end_time = video_start_time + video_length
@@ -102,7 +103,9 @@ if __name__ == "__main__":
         garmin_segment.get_subsegment(
             video_start_time,
             video_end_time,
+            video_stats_refresh_rate,
         ),
-        args["video_length_in_secs"],
-        args["video_offset_start_in_secs"],
+        video_length,
+        video_offset,
+        video_stats_refresh_rate,
     )
