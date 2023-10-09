@@ -5,7 +5,6 @@ from datetime import timedelta
 from tqdm import tqdm
 from numpy import arange
 import render
-from typing import Optional
 
 parser = argparse.ArgumentParser(
     description="Program to add metadata to cycling video from GoPro"
