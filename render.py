@@ -22,25 +22,25 @@ def write_video(
     optimized_video_resolution: Optional[int],
     garmin_segment: GarminSegment,
     garmin_start_time: datetime,
-    garmin_end_time: datetime,
-    video_length: timedelta,
+    video_length: Optional[timedelta],
     video_offset: timedelta,
     stats_refresh_period: timedelta,
 ) -> None:
+    original_clip = VideoFileClip(original_in_video_path)
+    if optimized_video_resolution is not None:
+        scale_factor = optimized_video_resolution / original_clip.size[1]
+    else:
+        scale_factor = 1.0
+    if video_length is None:
+        video_length = timedelta(seconds=original_clip.duration) - video_offset
+
+    garmin_subsegment = garmin_segment.get_subsegment(
+        garmin_start_time, garmin_start_time + video_length, stats_refresh_period
+    )
+
     clip = VideoFileClip(in_video_path).subclip(
         video_offset.total_seconds(),
         video_offset.total_seconds() + video_length.total_seconds(),
-    )
-
-    if optimized_video_resolution is not None:
-        scale_factor = (
-            optimized_video_resolution / VideoFileClip(original_in_video_path).size[1]
-        )
-    else:
-        scale_factor = 1.0
-
-    garmin_subsegment = garmin_segment.get_subsegment(
-        garmin_start_time, garmin_end_time, stats_refresh_period
     )
 
     MAP_AND_LOCATION_CLIP_SIZE = 0.75 * scale_factor

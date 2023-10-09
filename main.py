@@ -30,7 +30,7 @@ parser.add_argument(
     "--video-length-in-secs",
     help="How many seconds the video should last",
     type=float,
-    required=True,
+    default=None,
 )
 parser.add_argument(
     "--video-offset-start-in-secs",
@@ -69,7 +69,11 @@ if __name__ == "__main__":
     )
     first_move_time = timedelta(seconds=args["first_move_time_in_secs"])
 
-    video_length = timedelta(seconds=args["video_length_in_secs"])
+    video_length = (
+        timedelta(seconds=args["video_length_in_secs"])
+        if args["video_length_in_secs"] is not None
+        else None
+    )
     video_offset = timedelta(seconds=args["video_offset_start_in_secs"])
     video_stats_refresh_rate = timedelta(
         seconds=args["video_stats_refresh_rate_in_secs"]
@@ -116,7 +120,6 @@ if __name__ == "__main__":
     garmin_time_shift = garmin_first_move_time - go_pro_first_move_time
 
     garmin_start_time = go_pro_start_time + video_offset + garmin_time_shift
-    garmin_end_time = garmin_start_time + video_length
 
     render.write_video(
         args["video_file"],
@@ -125,7 +128,6 @@ if __name__ == "__main__":
         args["optimized_video_resolution"],
         garmin_segment,
         garmin_start_time,
-        garmin_end_time,
         video_length,
         video_offset,
         video_stats_refresh_rate,
