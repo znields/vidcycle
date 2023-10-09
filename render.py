@@ -87,7 +87,7 @@ def write_video(
     if out_video_path is None:
         video.without_audio().preview(fps=30)
     else:
-        video.write_videofile(out_video_path, fps=1)
+        video.write_videofile(out_video_path, fps=2)
 
 
 def get_stat_clips(
