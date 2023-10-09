@@ -60,11 +60,10 @@ if __name__ == "__main__":
     )
     go_pro_coordinates = Coordinate.load_coordinates_from_video_file(args["video_file"])
 
-    start, end = go_pro.get_start_and_end_time(args["video_file"])
+    go_pro_start_time, _ = go_pro.get_start_and_end_time(args["video_file"])
 
     garmin_segment = Segment(garmin_coordinates)
     go_pro_segment = Segment(go_pro_coordinates)
-    print(start)
 
     min_segment_distance = float("inf")
     best_shift_in_seconds = args["gps_align_explore_range_in_secs"][0]
@@ -99,13 +98,12 @@ if __name__ == "__main__":
         seconds=args["video_stats_refresh_rate_in_secs"]
     )
 
-    video_start_time = go_pro_segment.get_start_time() + best_shift + video_offset
+    video_start_time = go_pro_start_time + best_shift + video_offset
     video_end_time = video_start_time + video_length
 
     render.write_video(
         args["video_file"],
         args["video_output_path"],
-        720,
         garmin_segment,
         video_start_time,
         video_end_time,

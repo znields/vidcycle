@@ -14,7 +14,6 @@ from typing import Any
 def write_video(
     in_video_path: str,
     out_video_path: Optional[str],
-    render_height: int,
     video_segment: Segment,
     video_start_time: datetime,
     video_end_time: datetime,
@@ -22,13 +21,9 @@ def write_video(
     video_offset: timedelta,
     stats_refresh_period: timedelta,
 ) -> None:
-    clip = (
-        VideoFileClip(in_video_path)
-        # .resize(height=render_height)
-        .subclip(
-            video_offset.total_seconds(),
-            video_offset.total_seconds() + video_length.total_seconds(),
-        )
+    clip = VideoFileClip(in_video_path).subclip(
+        video_offset.total_seconds(),
+        video_offset.total_seconds() + video_length.total_seconds(),
     )
     video_subsegment = video_segment.get_subsegment(
         video_start_time, video_end_time, stats_refresh_period
@@ -48,7 +43,6 @@ def write_video(
             video_length,
             video_start_time,
             stats_refresh_period,
-            render_height,
         )
         .set_opacity(0.75)
         .set_position(MAP_AND_LOCATION_POSITION, relative=True)
@@ -61,7 +55,6 @@ def write_video(
             video_length,
             video_start_time,
             stats_refresh_period,
-            render_height,
             15,
         )
         .set_opacity(0.75)
@@ -75,7 +68,6 @@ def write_video(
             video_length,
             video_start_time,
             stats_refresh_period,
-            render_height,
             30,
         )
         .set_opacity(0.3)
@@ -140,12 +132,12 @@ def get_stat_clips(
     return stat_clips
 
 
+# TODO: add option to render only part of map
 def get_map_clip(
     video_segment: Segment,
     video_length: timedelta,
     video_start_time: datetime,
     stats_refresh_period: timedelta,
-    render_height: int,
 ):
     fig_mpl = plt.figure(frameon=False, facecolor="black")
     ax = fig_mpl.add_axes([0, 0, 1, 1])
@@ -194,7 +186,6 @@ def get_location_clip(
     video_length: timedelta,
     video_start_time: datetime,
     stats_refresh_period: timedelta,
-    render_height: int,
     marker_size: int,
 ):
     fig_mpl = plt.figure(frameon=False, facecolor="black")
