@@ -161,6 +161,7 @@ cython_debug/
 
 *.gpx
 *.mp4
+*.MP4
 *.mp3
 *.fit
 *.jpeg

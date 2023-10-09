@@ -43,7 +43,7 @@ def write_video(
         video_offset.total_seconds() + video_length.total_seconds(),
     )
 
-    MAP_AND_LOCATION_CLIP_SIZE = 0.75 * scale_factor
+    MAP_AND_LOCATION_CLIP_SIZE = 1.5 * scale_factor
     MAP_AND_LOCATION_POSITION = (0.01, 0.05)
     LOCATION_POINT_SIZE = 15 * scale_factor
 
@@ -95,7 +95,7 @@ def write_video(
     if out_video_path is None:
         video.without_audio().preview(fps=FRAME_PER_SECOND)
     else:
-        video.write_videofile(out_video_path, fps=FRAME_PER_SECOND, threads=8)
+        video.write_videofile(out_video_path, fps=FRAME_PER_SECOND, threads=1000)
 
 
 def get_stat_clips(
@@ -187,7 +187,7 @@ def get_map_clip(
 
         frame = make_frame_mpl(t.total_seconds())
         x, y, _ = frame.shape
-        mask = (np.sum(frame, axis=2) > 10).reshape(x, y, 1)
+        mask = (np.sum(frame, axis=2) > 10).reshape(x, y)
         return mask
 
     mask = VideoClip(make_mask_mpl, duration=video_length.total_seconds(), ismask=True)
