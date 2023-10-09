@@ -180,6 +180,11 @@ class GarminCoordinate(Coordinate):
 
 class Segment:
     def __init__(self, coordinates: List[Coordinate]) -> None:
+        self.coordinates: List[Coordinate] = self._get_filtered_coordinates(coordinates)
+
+    def _get_filtered_coordinates(
+        self, coordinates: List[Coordinate]
+    ) -> List[Coordinate]:
         reversed_coordinates = []
         for coordinate in coordinates[::-1]:
             if (
@@ -191,7 +196,7 @@ class Segment:
                 )
             ):
                 reversed_coordinates.append(coordinate)
-        self.coordinates: List[Coordinate] = reversed_coordinates[::-1]
+        return reversed_coordinates[::-1]
 
     @functools.lru_cache(maxsize=None)
     def get_coordinate(self, time: datetime) -> Optional[Coordinate]:
@@ -228,14 +233,21 @@ class Segment:
     def get_iterator(self, iterator_step_length: timedelta):
         return SegmentIterator(self, iterator_step_length)
 
-    def get_subsegment(
+    def _get_coordinates(
         self, start_time: datetime, end_time: datetime, step_length: timedelta
-    ):
+    ) -> List[Coordinate]:
         new_coordinates = []
         while start_time <= end_time:
             new_coordinates.append(self.get_coordinate(start_time))
             start_time += step_length
+        return new_coordinates
 
+    def get_subsegment(
+        self, start_time: datetime, end_time: datetime, step_length: timedelta
+    ) -> "Segment":
+        new_coordinates: List[Coordinate] = self._get_coordinates(
+            start_time, end_time, step_length
+        )
         return Segment(new_coordinates)
 
     def write_to_csv(self, file_path):
@@ -260,6 +272,7 @@ class GarminSegment(Segment):
 
     def __init__(self, coordinates: List[GarminCoordinate]) -> None:
         super().__init__(coordinates)
+        self.coordinates: List[GarminCoordinate] = self.coordinates
 
     def write_to_csv(self, file_path):
         with open(file_path, "w") as csvfile:
@@ -271,10 +284,36 @@ class GarminSegment(Segment):
                         int(coordinate.timestamp.timestamp()),
                         coordinate.latitude,
                         coordinate.longitude,
+                        coordinate.speed,
                     ]
                 )
 
         csvfile.close()
+
+    def get_iterator(self, iterator_step_length: timedelta):
+        return GarminSegmentIterator(self, iterator_step_length)
+
+    def get_subsegment(
+        self, start_time: datetime, end_time: datetime, step_length: timedelta
+    ) -> "GarminSegment":
+        new_coordinates: List[GarminCoordinate] = self._get_coordinates(
+            start_time, end_time, step_length
+        )
+        return GarminSegment(new_coordinates)
+
+    def get_first_move_coordinate(
+        self, start_time: datetime, end_time: datetime
+    ) -> Optional[GarminCoordinate]:
+        for a, b in zip(self.coordinates[:-1], self.coordinates[1:]):
+            if not start_time < a.timestamp < b.timestamp < end_time:
+                continue
+
+            if (a.speed is None or a.speed < 0.0001) and (
+                b.speed is not None and b.speed > 0.0001
+            ):
+                return b
+
+        return None
 
 
 class SegmentIterator:
@@ -295,6 +334,17 @@ class SegmentIterator:
             raise StopIteration
 
         return coordinate
+
+
+class GarminSegmentIterator(SegmentIterator):
+    def __init__(self, segment: GarminSegment, iterator_step_length: timedelta):
+        super().__init__(segment, iterator_step_length)
+
+    def __iter__(self) -> "GarminSegmentIterator":
+        return super().__iter__()
+
+    def __next__(self) -> GarminCoordinate:
+        return super().__next__()
 
 
 def calculate_segment_distance(
