@@ -39,6 +39,9 @@ def write_video(
         stats_refresh_period,
     )
 
+    MAP_AND_LOCATION_CLIP_SIZE = 0.75
+    MAP_AND_LOCATION_POSITION = (0.01, 0.01)
+
     map_clip = (
         get_map_clip(
             video_segment,
@@ -47,9 +50,9 @@ def write_video(
             stats_refresh_period,
             render_height,
         )
-        .set_opacity(0.9)
-        .set_position((0.01, 0.01), relative=True)
-        .resize(0.75)
+        .set_opacity(0.75)
+        .set_position(MAP_AND_LOCATION_POSITION, relative=True)
+        .resize(MAP_AND_LOCATION_CLIP_SIZE)
     )
 
     location_clip_inner = (
@@ -61,9 +64,9 @@ def write_video(
             render_height,
             15,
         )
-        .set_opacity(1.0)
-        .set_position((0.01, 0.01), relative=True)
-        .resize(0.75)
+        .set_opacity(0.75)
+        .set_position(MAP_AND_LOCATION_POSITION, relative=True)
+        .resize(MAP_AND_LOCATION_CLIP_SIZE)
     )
 
     location_clip_outer = (
@@ -73,11 +76,11 @@ def write_video(
             video_start_time,
             stats_refresh_period,
             render_height,
-            25,
+            30,
         )
         .set_opacity(0.3)
-        .set_position((0.01, 0.01), relative=True)
-        .resize(0.75)
+        .set_position(MAP_AND_LOCATION_POSITION, relative=True)
+        .resize(MAP_AND_LOCATION_CLIP_SIZE)
     )
 
     video = CompositeVideoClip(
@@ -102,12 +105,6 @@ def get_stat_clips(
 
         return str(data)
 
-    def get_font_size(key: str) -> int:
-        if key == "timestamp":
-            return 70
-
-        return 120
-
     stat_clips = []
     for idx, key_and_label in enumerate(
         [
@@ -124,7 +121,7 @@ def get_stat_clips(
                 TextClip(
                     data_to_str(coordinate.__dict__[key])
                     + ("" if label is None else "\n" + label),
-                    fontsize=get_font_size(key),
+                    fontsize=190,
                     color="white",
                     font="Helvetica-Bold",
                 )
@@ -135,7 +132,7 @@ def get_stat_clips(
 
         stat_clip = (
             concatenate_videoclips(text_clips)
-            .set_position((0.01, idx / 10), relative=True)
+            .set_position((0.01, idx / 6), relative=True)
             .subclip(0, video_length.total_seconds())
         )
 
