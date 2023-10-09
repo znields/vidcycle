@@ -1,12 +1,11 @@
 import argparse
-from moviepy import *
-from moviepy.editor import *
 import go_pro
 from coordinate import Segment, calculate_segment_distance, GarminCoordinate, Coordinate
 from datetime import timedelta
 from tqdm import tqdm
 from numpy import arange
 import render
+from typing import Optional
 
 parser = argparse.ArgumentParser(
     description="Program to add metadata to cycling video from GoPro"
@@ -46,6 +45,12 @@ parser.add_argument(
     default=0.0,
     type=float,
 )
+parser.add_argument(
+    "--video-output-path",
+    help="Video output path. If none then will preview video.",
+    default=None,
+    type=str,
+)
 args = vars(parser.parse_args())
 
 
@@ -59,6 +64,7 @@ if __name__ == "__main__":
 
     garmin_segment = Segment(garmin_coordinates)
     go_pro_segment = Segment(go_pro_coordinates)
+    print(start)
 
     min_segment_distance = float("inf")
     best_shift_in_seconds = args["gps_align_explore_range_in_secs"][0]
@@ -98,13 +104,11 @@ if __name__ == "__main__":
 
     render.write_video(
         args["video_file"],
-        "out.mp4",
-        1080,
-        garmin_segment.get_subsegment(
-            video_start_time,
-            video_end_time,
-            video_stats_refresh_rate,
-        ),
+        args["video_output_path"],
+        720,
+        garmin_segment,
+        video_start_time,
+        video_end_time,
         video_length,
         video_offset,
         video_stats_refresh_rate,
