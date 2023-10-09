@@ -3,7 +3,6 @@ import go_pro
 from coordinate import (
     GarminSegment,
     GarminCoordinate,
-    Coordinate,
 )
 from datetime import timedelta
 import render
