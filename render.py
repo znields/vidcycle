@@ -11,7 +11,7 @@ from typing import Optional
 from typing import Any
 import os
 
-FRAME_PER_SECOND = 30
+FRAMES_PER_SECOND = 30
 DEFAULT_FONT_SIZE = 190
 
 
@@ -93,9 +93,9 @@ def write_video(
     )
 
     if out_video_path is None:
-        video.without_audio().preview(fps=FRAME_PER_SECOND)
+        video.without_audio().preview(fps=FRAMES_PER_SECOND)
     else:
-        video.write_videofile(out_video_path, fps=FRAME_PER_SECOND, threads=64)
+        video.write_videofile(out_video_path, fps=FRAMES_PER_SECOND, threads=64)
 
 
 def get_stat_clips(
