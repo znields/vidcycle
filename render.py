@@ -9,6 +9,7 @@ import matplotlib.patches as patches
 from matplotlib.path import Path
 from typing import Optional
 from typing import Any
+import os
 
 
 def write_video(
@@ -20,11 +21,13 @@ def write_video(
     video_length: timedelta,
     video_offset: timedelta,
     stats_refresh_period: timedelta,
+    optimized_video_resolution: int,
 ) -> None:
     clip = VideoFileClip(in_video_path).subclip(
         video_offset.total_seconds(),
         video_offset.total_seconds() + video_length.total_seconds(),
     )
+    clip = clip.resize(1080 / optimized_video_resolution)
     video_subsegment = video_segment.get_subsegment(
         video_start_time, video_end_time, stats_refresh_period
     )
@@ -35,7 +38,7 @@ def write_video(
     )
 
     MAP_AND_LOCATION_CLIP_SIZE = 0.75
-    MAP_AND_LOCATION_POSITION = (0.01, 0.01)
+    MAP_AND_LOCATION_POSITION = (0.01, 0.05)
 
     map_clip = (
         get_map_clip(
@@ -241,3 +244,14 @@ def get_location_clip(
     clip = VideoClip(make_frame_mpl, duration=video_length.total_seconds())
 
     return clip.set_mask(mask)
+
+
+def write_optimized_video(in_video_path: str, optimized_video_resolution: int) -> str:
+    filename, ext = in_video_path.split(".")
+    path = f"{filename}_{optimized_video_resolution}.{ext}"
+    if os.path.isfile(path):
+        return path
+
+    clip = VideoFileClip(in_video_path).resize(height=optimized_video_resolution)
+    clip.write_videofile(path)
+    return path

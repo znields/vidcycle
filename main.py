@@ -10,8 +10,14 @@ from typing import Optional
 parser = argparse.ArgumentParser(
     description="Program to add metadata to cycling video from GoPro"
 )
-parser.add_argument("--fit-file", help="GPX file of ride", required=True)
-parser.add_argument("--video-file", help="Video file of ride", required=True)
+parser.add_argument("--fit-file", help="GPX file of ride", required=True, type=str)
+parser.add_argument("--video-file", help="Video file of ride", required=True, type=str)
+parser.add_argument(
+    "--optimized-video-resolution",
+    help="Video resolution of optimized video",
+    type=int,
+    default=None,
+)
 parser.add_argument(
     "--gps-align-explore-range-in-secs",
     help="Range of number of seconds to search for GPS alignment (low -> high)",
@@ -55,6 +61,13 @@ args = vars(parser.parse_args())
 
 
 if __name__ == "__main__":
+    if args["optimized_video_resolution"] is not None:
+        video_file_path = render.write_optimized_video(
+            args["video_file"], args["optimized_video_resolution"]
+        )
+    else:
+        video_file_path = args["video_file"]
+
     garmin_coordinates = GarminCoordinate.load_coordinates_from_fit_file(
         args["fit_file"]
     )
@@ -102,7 +115,7 @@ if __name__ == "__main__":
     video_end_time = video_start_time + video_length
 
     render.write_video(
-        args["video_file"],
+        video_file_path,
         args["video_output_path"],
         garmin_segment,
         video_start_time,
@@ -110,4 +123,5 @@ if __name__ == "__main__":
         video_length,
         video_offset,
         video_stats_refresh_rate,
+        args["optimized_video_resolution"],
     )

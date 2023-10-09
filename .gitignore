@@ -164,5 +164,6 @@ cython_debug/
 *.mp3
 *.fit
 *.jpeg
+*.csv
 
 .DS_Store

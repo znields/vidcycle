@@ -244,7 +244,34 @@ class Segment:
 
             for coordinate in self.coordinates:
                 writer.writerow(
-                    [coordinate.timestamp, coordinate.latitude, coordinate.longitude]
+                    [
+                        int(coordinate.timestamp.timestamp()),
+                        coordinate.latitude,
+                        coordinate.longitude,
+                    ]
+                )
+
+        csvfile.close()
+
+
+class GarminSegment(Segment):
+    def get_coordinate(self, time: datetime) -> Optional[GarminCoordinate]:
+        return super().get_coordinate(time)
+
+    def __init__(self, coordinates: List[GarminCoordinate]) -> None:
+        super().__init__(coordinates)
+
+    def write_to_csv(self, file_path):
+        with open(file_path, "w") as csvfile:
+            writer = csv.writer(csvfile)
+
+            for coordinate in self.coordinates:
+                writer.writerow(
+                    [
+                        int(coordinate.timestamp.timestamp()),
+                        coordinate.latitude,
+                        coordinate.longitude,
+                    ]
                 )
 
         csvfile.close()
@@ -271,7 +298,7 @@ class SegmentIterator:
 
 
 def calculate_segment_distance(
-    garmin_segment: Segment,
+    garmin_segment: GarminSegment,
     go_pro_segment: Segment,
     go_pro_start_offset: timedelta,
     gps_align_step_size: timedelta,
@@ -283,6 +310,9 @@ def calculate_segment_distance(
         garmin_coorindate = garmin_segment.get_coordinate(
             go_pro_coordinate.timestamp + go_pro_start_offset
         )
+        if garmin_coorindate.speed is None or garmin_coorindate.speed < 0.1:
+            continue
+
         if garmin_coorindate is None:
             if num_points != 0:
                 break
