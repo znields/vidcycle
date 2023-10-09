@@ -115,7 +115,7 @@ def get_stat_clips(
             ("power", "PWR"),
             ("cadence", "RPM"),
         ],
-        4,
+        2,
     ):
         key, label = key_and_label
         text_clips = []
