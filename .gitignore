@@ -166,5 +166,6 @@ cython_debug/
 *.fit
 *.jpeg
 *.csv
+*.png
 
 .DS_Store
