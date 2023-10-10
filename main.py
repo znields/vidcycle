@@ -96,11 +96,10 @@ if __name__ == "__main__":
         go_pro_start_time + first_move_time + right_search_bound,
     )
     print(
-        f"Searching for first Garmin move time between {left_search} and {right_search}."
+        f"\n\nSearching for first Garmin move time between {left_search} and {right_search}."
     )
     garmin_first_move_coordinate = garmin_segment.get_first_move_coordinate(
-        go_pro_start_time + first_move_time + left_search_bound,
-        go_pro_start_time + first_move_time + right_search_bound,
+        left_search, right_search
     )
 
     if garmin_first_move_coordinate is None:
