@@ -1,9 +1,6 @@
-from moviepy import *
-from moviepy.editor import *
 from datetime import timedelta, datetime
 from coordinate import GarminSegment
 import matplotlib.pyplot as plt
-from moviepy.video.io.bindings import mplfig_to_npimage
 import numpy as np
 import matplotlib.patches as patches
 from matplotlib.path import Path
@@ -28,130 +25,7 @@ def write_video(
     video_offset: timedelta,
     stats_refresh_period: timedelta,
 ) -> None:
-    original_clip = VideoFileClip(original_in_video_path)
-    if optimized_video_resolution is not None:
-        scale_factor = optimized_video_resolution / original_clip.size[1]
-    else:
-        scale_factor = 1.0
-    if video_length is None:
-        video_length = timedelta(seconds=original_clip.duration) - video_offset
-
-    garmin_subsegment = garmin_segment.get_subsegment(
-        garmin_start_time, garmin_start_time + video_length, stats_refresh_period
-    )
-
-    clip = VideoFileClip(in_video_path).subclip(
-        video_offset.total_seconds(),
-        video_offset.total_seconds() + video_length.total_seconds(),
-    )
-
-    MAP_AND_LOCATION_CLIP_SIZE = 1.5 * scale_factor
-    MAP_AND_LOCATION_POSITION = (0.01, 0.05)
-    LOCATION_POINT_SIZE = 15 * scale_factor
-
-    stat_clips, label_clips = get_stat_clips(
-        garmin_subsegment, video_length, stats_refresh_period, scale_factor
-    )
-
-    map_clip, location_clip_inner, location_clip_outer = get_map_clips(
-        garmin_segment,
-        garmin_start_time,
-        video_length,
-        stats_refresh_period,
-        LOCATION_POINT_SIZE,
-        LOCATION_POINT_SIZE * 2,
-    )
-
-    map_clip = (
-        map_clip.set_opacity(0.75)
-        .set_position(MAP_AND_LOCATION_POSITION, relative=True)
-        .resize(MAP_AND_LOCATION_CLIP_SIZE)
-    )
-
-    location_clip_inner = (
-        location_clip_inner.set_opacity(0.75)
-        .set_position(MAP_AND_LOCATION_POSITION, relative=True)
-        .resize(MAP_AND_LOCATION_CLIP_SIZE)
-    )
-
-    location_clip_outer = (
-        location_clip_outer.set_opacity(0.3)
-        .set_position(MAP_AND_LOCATION_POSITION, relative=True)
-        .resize(MAP_AND_LOCATION_CLIP_SIZE)
-    )
-
-    video = CompositeVideoClip(
-        [clip, map_clip, location_clip_inner, location_clip_outer]
-        + stat_clips
-        + label_clips
-    )
-
-    if out_video_path is None:
-        video.without_audio().preview(fps=FRAMES_PER_SECOND)
-    else:
-        video.write_videofile(out_video_path, fps=FRAMES_PER_SECOND, threads=64)
-
-
-def get_stat_clips(
-    garmin_segment: GarminSegment,
-    video_length: timedelta,
-    stats_refresh_period: timedelta,
-    scale_factor: float,
-) -> Tuple[List[VideoClip], List[TextClip]]:
-    def data_to_str(data: Any):
-        if data is None:
-            return "0"
-
-        if type(data) == float:
-            return str(int(data))
-
-        return str(data)
-
-    stat_clips = []
-    label_clips = []
-    for idx, key_and_label in enumerate(
-        [
-            ("speed", "MPH"),
-            ("power", "PWR"),
-            ("cadence", "RPM"),
-        ],
-        2,
-    ):
-        key, label = key_and_label
-        text_clips = []
-        for coordinate in garmin_segment.get_iterator(stats_refresh_period):
-            text_clip = (
-                TextClip(
-                    data_to_str(coordinate.__dict__[key]),
-                    fontsize=STAT_FONT_SIZE * scale_factor,
-                    color="white",
-                    font="Helvetica-Bold",
-                )
-                .set_duration(stats_refresh_period.total_seconds())
-                .set_opacity(0.75)
-            )
-            text_clips.append(text_clip)
-
-        stat_clip = (
-            concatenate_videoclips(text_clips)
-            .set_position((STAT_CLIP_X_POS, idx / 6), relative=True)
-            .subclip(0, video_length.total_seconds())
-        )
-
-        stat_clips.append(stat_clip)
-
-        label_clips.append(
-            TextClip(
-                label,
-                fontsize=LABEL_FONT_SIZE * scale_factor,
-                color="white",
-                font="Helvetica-Bold",
-            )
-            .set_duration(stats_refresh_period.total_seconds() * len(text_clips))
-            .set_position((STAT_CLIP_X_POS, (idx / 6) - 0.015), relative=True)
-            .set_opacity(0.75),
-        )
-    return stat_clips, label_clips
+    pass
 
 
 def get_map_clips(
