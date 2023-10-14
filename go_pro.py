@@ -1,6 +1,7 @@
 import subprocess
 from typing import Tuple
 from datetime import datetime, timezone, timedelta
+import ffmpeg
 
 
 def load_exif_data(video_file_path: str):
@@ -30,3 +31,10 @@ def get_start_and_end_time(video_file_path: str) -> Tuple[datetime, datetime]:
         video_start_time,
         video_start_time + track_duration,
     )
+
+
+def get_video_resolution(video_file_path: str) -> Tuple[int, int]:
+    probe = ffmpeg.probe(video_file_path)
+    video_streams = [stream for stream in probe["streams"] if stream["codec_type"] == "video"]
+    video_stream = video_streams[0]
+    return video_stream['width'], video_stream['height']

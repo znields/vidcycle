@@ -13,17 +13,10 @@ parser = argparse.ArgumentParser(
 parser.add_argument("--fit-file", help="GPX file of ride", required=True, type=str)
 parser.add_argument("--video-file", help="Video file of ride", required=True, type=str)
 parser.add_argument(
-    "--optimized-video-resolution",
-    help="Video resolution of optimized video",
-    type=int,
-    default=None,
-)
-parser.add_argument(
     "--video-stats-refresh-rate-in-secs",
     help="How often the video stats refresh in seconds",
-    default=0.5,
+    default=0.1,
     type=float,
-    required=True,
 )
 parser.add_argument(
     "--video-length-in-secs",
@@ -79,12 +72,6 @@ if __name__ == "__main__":
     )
 
     go_pro_start_time, _ = go_pro.get_start_and_end_time(args["video_file"])
-    if args["optimized_video_resolution"] is not None:
-        optimized_video_file_path = render.write_optimized_video(
-            args["video_file"], args["optimized_video_resolution"]
-        )
-    else:
-        optimized_video_file_path = args["video_file"]
 
     garmin_coordinates = GarminCoordinate.load_coordinates_from_fit_file(
         args["fit_file"]
@@ -121,9 +108,8 @@ if __name__ == "__main__":
 
     render.write_video(
         args["video_file"],
-        optimized_video_file_path,
+        args["video_file"],
         args["video_output_path"],
-        args["optimized_video_resolution"],
         garmin_segment,
         garmin_start_time,
         video_length,
