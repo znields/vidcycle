@@ -9,19 +9,23 @@ from typing import Any, Tuple, List
 import os
 from go_pro import get_video_resolution
 
-FRAMES_PER_SECOND = 30
-STAT_FONT_SIZE = 350
-LABEL_FONT_SIZE = 100
-STAT_CLIP_X_POS = 0.02
+STATS_X_POSITION = 0.15
+POWER_Y_POSITION = 0.25
+HEART_RATE_Y_POSITION = 0.45
+CADENCE_Y_POSITION = 0.65
+STAT_LABEL_Y_POSITION_DIFFERENCE = 0.11
+STATS_LABEL_FONT_SIZE = 70
+STATS_FONT_SIZE = 200
+
+NUMBER_OF_THREADS = 63
 
 
 def write_video(
-    original_in_video_path: str,
     in_video_path: str,
     out_video_path: Optional[str],
     garmin_segment: GarminSegment,
     garmin_start_time: datetime,
-    video_length: Optional[timedelta],
+    video_length: timedelta,
     video_offset: timedelta,
     stats_refresh_period: timedelta,
 ) -> None:
@@ -81,29 +85,50 @@ def write_panel_as_images(
         ax.set_ylim(min_y - (dy * 0.01), max_y + (dy * 0.01))
 
     def plot_stats():
-        ax = fig_mpl.add_axes([0, 0, 1, map_height])
+        ax = fig_mpl.add_axes([0, 0, 1, 1 - map_height])
         ax.axis("off")
 
         texts = [
             ax.text(
-                0.15,
-                0.2,
+                STATS_X_POSITION,
+                POWER_Y_POSITION,
                 str(int(coordinates[400].power)),
-                fontsize=200,
+                fontsize=STATS_FONT_SIZE,
                 color="white",
             ),
             ax.text(
-                0.15,
-                0.4,
+                STATS_X_POSITION,
+                POWER_Y_POSITION + STAT_LABEL_Y_POSITION_DIFFERENCE,
+                "PWR",
+                fontsize=STATS_LABEL_FONT_SIZE,
+                color="white",
+            ),
+            ax.text(
+                STATS_X_POSITION,
+                HEART_RATE_Y_POSITION,
                 str(int(coordinates[400].heart_rate)),
-                fontsize=200,
+                fontsize=STATS_FONT_SIZE,
                 color="white",
             ),
             ax.text(
-                0.15,
-                0.6,
+                STATS_X_POSITION,
+                HEART_RATE_Y_POSITION + STAT_LABEL_Y_POSITION_DIFFERENCE,
+                "HR",
+                fontsize=STATS_LABEL_FONT_SIZE,
+                color="white",
+            ),
+            ax.text(
+                STATS_X_POSITION,
+                CADENCE_Y_POSITION,
                 str(int(coordinates[400].cadence)),
-                fontsize=200,
+                fontsize=STATS_FONT_SIZE,
+                color="white",
+            ),
+            ax.text(
+                STATS_X_POSITION,
+                CADENCE_Y_POSITION + STAT_LABEL_Y_POSITION_DIFFERENCE,
+                "RPM",
+                fontsize=STATS_LABEL_FONT_SIZE,
                 color="white",
             ),
         ]
@@ -112,7 +137,7 @@ def write_panel_as_images(
 
     plot_map_and_marker()
     plot_stats()
-    fig_mpl.savefig("out.png", transparent=True)
+    fig_mpl.savefig("panel/000400.png", transparent=True)
 
     # def get_map_clips(
     #     garmin_segment: GarminSegment,

@@ -35,6 +35,26 @@ def get_start_and_end_time(video_file_path: str) -> Tuple[datetime, datetime]:
 
 def get_video_resolution(video_file_path: str) -> Tuple[int, int]:
     probe = ffmpeg.probe(video_file_path)
-    video_streams = [stream for stream in probe["streams"] if stream["codec_type"] == "video"]
+    video_streams = [
+        stream for stream in probe["streams"] if stream["codec_type"] == "video"
+    ]
     video_stream = video_streams[0]
-    return video_stream['width'], video_stream['height']
+    return video_stream["width"], video_stream["height"]
+
+
+def get_video_length(video_file_path: str) -> timedelta:
+    result = subprocess.run(
+        [
+            "ffprobe",
+            "-v",
+            "error",
+            "-show_entries",
+            "format=duration",
+            "-of",
+            "default=noprint_wrappers=1:nokey=1",
+            video_file_path,
+        ],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+    )
+    return timedelta(seconds=float(result.stdout))

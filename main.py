@@ -33,8 +33,8 @@ parser.add_argument(
 parser.add_argument(
     "--video-output-path",
     help="Video output path. If none then will preview video.",
-    default=None,
     type=str,
+    required=True,
 )
 parser.add_argument(
     "--first-move-time-in-secs",
@@ -64,7 +64,7 @@ if __name__ == "__main__":
     video_length = (
         timedelta(seconds=args["video_length_in_secs"])
         if args["video_length_in_secs"] is not None
-        else None
+        else go_pro.get_video_length(args["video_file"])
     )
     video_offset = timedelta(seconds=args["video_offset_start_in_secs"])
     video_stats_refresh_rate = timedelta(
@@ -83,7 +83,7 @@ if __name__ == "__main__":
         go_pro_start_time + first_move_time + right_search_bound,
     )
     print(
-        f"\n\nSearching for first Garmin move time between {left_search} and {right_search}."
+        f"Searching for first Garmin move time between {left_search} and {right_search}."
     )
     garmin_first_move_coordinate = garmin_segment.get_first_move_coordinate(
         left_search, right_search
@@ -107,7 +107,6 @@ if __name__ == "__main__":
     garmin_start_time = go_pro_start_time + video_offset + garmin_time_shift
 
     render.write_video(
-        args["video_file"],
         args["video_file"],
         args["video_output_path"],
         garmin_segment,
