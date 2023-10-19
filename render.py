@@ -20,6 +20,54 @@ STATS_FONT_SIZE = 200
 NUMBER_OF_THREADS = 63
 
 
+class Renderer:
+    pass
+
+
+class ThreadedPanelRenderer(Renderer):
+    def __init__(
+        self,
+        garmin_segment: GarminSegment,
+        go_pro_video: GoProVideo,
+        output_folder: str,
+        frames_per_second: int,
+        num_threads: int,
+    ) -> None:
+        self.garmin_segment = garmin_segment
+        self.go_pro_video = go_pro_video
+        self.output_folder = output_folder
+        self.frames_per_second = frames_per_second
+        self.num_threads = num_threads
+
+    def render(self) -> None:
+        pass
+
+    def make_figure():
+        pass
+
+
+class PanelRenderer(Renderer):
+    def __init__(
+        self,
+        garmin_segment: GarminSegment,
+        go_pro_video: GoProVideo,
+        output_folder: str,
+        frames_per_second: int,
+    ) -> None:
+        self.garmin_segment = garmin_segment
+        self.go_pro_video = go_pro_video
+        self.output_folder = output_folder
+        self.frames_per_second = frames_per_second
+
+    def render(self) -> None:
+        pass
+
+
+class VideoRenderer(Renderer):
+    def __init__(self, output_filepath: str) -> None:
+        self.output_filepath = output_filepath
+
+
 def write_video(
     in_video_path: str,
     out_video_path: Optional[str],
