@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta, timezone
 import json
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Tuple
 import geopy.distance
 import functools
 from garmin_fit_sdk import Decoder, Stream
@@ -164,19 +164,6 @@ class GarminCoordinate(Coordinate):
 
         return garmin_coordinate
 
-    @staticmethod
-    def load_coordinates_from_fit_file(path: str) -> List["GarminCoordinate"]:
-        stream = Stream.from_file(path)
-
-        decoder = Decoder(stream)
-        messages, _ = decoder.read()
-
-        coordinates = []
-        for message in messages["record_mesgs"]:
-            message = {key: message[key] for key in message if type(key) == str}
-            coordinates.append(GarminCoordinate(**message))
-        return coordinates
-
 
 class Segment:
     def __init__(self, coordinates: List[Coordinate]) -> None:
@@ -208,6 +195,8 @@ class Segment:
                 b_timestamp = b.timestamp.timestamp()
 
                 time_delta = b_timestamp - a_timestamp
+                # why care if there is a gap > 1.5 secs?
+                # because this indicates gps stopped recording
                 if time_delta < 0.0001 or time_delta > 1.5:
                     result = copy(a)
                     break
@@ -265,6 +254,9 @@ class Segment:
 
         csvfile.close()
 
+    def get_xy_pair(self) -> Tuple[float, float]:
+        return 0.0, 0.0
+
 
 class GarminSegment(Segment):
     def get_coordinate(self, time: datetime) -> Optional[GarminCoordinate]:
@@ -314,6 +306,19 @@ class GarminSegment(Segment):
                 return b
 
         return None
+
+    @staticmethod
+    def load_from_fit_file(path: str) -> List["GarminCoordinate"]:
+        stream = Stream.from_file(path)
+
+        decoder = Decoder(stream)
+        messages, _ = decoder.read()
+
+        coordinates = []
+        for message in messages["record_mesgs"]:
+            message = {key: message[key] for key in message if type(key) == str}
+            coordinates.append(GarminCoordinate(**message))
+        return GarminSegment(coordinates)
 
 
 class SegmentIterator:

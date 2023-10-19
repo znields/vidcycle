@@ -6,8 +6,8 @@ import matplotlib.patches as patches
 from matplotlib.path import Path
 from typing import Optional
 from typing import Any, Tuple, List
-import os
-from go_pro import get_video_resolution
+from video import GoProVideo
+import multiprocessing
 
 STATS_X_POSITION = 0.15
 POWER_Y_POSITION = 0.25
@@ -31,12 +31,16 @@ class ThreadedPanelRenderer(Renderer):
         go_pro_video: GoProVideo,
         output_folder: str,
         frames_per_second: int,
+        panel_width: float,
+        map_height: float,
         num_threads: int,
     ) -> None:
         self.garmin_segment = garmin_segment
         self.go_pro_video = go_pro_video
         self.output_folder = output_folder
         self.frames_per_second = frames_per_second
+        self.panel_width = panel_width
+        self.map_height = map_height
         self.num_threads = num_threads
 
     def render(self) -> None:
@@ -50,17 +54,44 @@ class PanelRenderer(Renderer):
     def __init__(
         self,
         garmin_segment: GarminSegment,
-        go_pro_video: GoProVideo,
+        video: GoProVideo,
         output_folder: str,
         frames_per_second: int,
     ) -> None:
         self.garmin_segment = garmin_segment
-        self.go_pro_video = go_pro_video
+        self.video = video
         self.output_folder = output_folder
         self.frames_per_second = frames_per_second
+        self.make_figure()
 
     def render(self) -> None:
         pass
+
+    def make_figure(self):
+        width, height = self.video.get_resolution()
+        figure = plt.figure(
+            frameon=False,
+            dpi=100,
+            figsize=(
+                (width / 100) * self.panel_width,
+                (height / 100),
+            ),
+        )
+        self.figure = figure
+
+    def plot_map(self):
+        ax = self.figure.add_axes([0, 1 - self.map_height, 1, self.map_height])
+        ax.axis("off")
+
+        codes = [Path.MOVETO] + [Path.CURVE3 for _ in range(len(verts) - 1)]
+        path = Path(verts, codes)
+        patch = patches.PathPatch(
+            path,
+            edgecolor=(1, 1, 1, map_opacity),
+            facecolor="none",
+            lw=6,
+        )
+        ax.add_patch(patch)
 
 
 class VideoRenderer(Renderer):
@@ -69,7 +100,7 @@ class VideoRenderer(Renderer):
 
 
 def write_video(
-    in_video_path: str,
+    in_video: GoProVideo,
     out_video_path: Optional[str],
     garmin_segment: GarminSegment,
     garmin_start_time: datetime,
@@ -77,11 +108,11 @@ def write_video(
     video_offset: timedelta,
     stats_refresh_period: timedelta,
 ) -> None:
-    write_panel_as_images(in_video_path, garmin_segment, stats_refresh_period)
+    write_panel_as_images(in_video, garmin_segment, stats_refresh_period)
 
 
 def write_panel_as_images(
-    in_video_path: str,
+    in_video: GoProVideo,
     garmin_segment: GarminSegment,
     stats_refresh_period: timedelta,
     panel_width: float = 0.2,
@@ -96,31 +127,11 @@ def write_panel_as_images(
     min_x, max_x = min(xs), max(xs)
     min_y, max_y = min(ys), max(ys)
     dx, dy = max_x - min_x, max_y - min_y
+    width, height = in_video.get_video_resolution()
+
     width, height = get_video_resolution(in_video_path)
 
-    fig_mpl = plt.figure(
-        frameon=False,
-        dpi=100,
-        figsize=(
-            (width / 100) * panel_width,
-            (height / 100),
-        ),
-    )
-
     def plot_map_and_marker():
-        ax = fig_mpl.add_axes([0, 1 - map_height, 1, map_height])
-        ax.axis("off")
-
-        codes = [Path.MOVETO] + [Path.CURVE3 for _ in range(len(verts) - 1)]
-        path = Path(verts, codes)
-        patch = patches.PathPatch(
-            path,
-            edgecolor=(1, 1, 1, map_opacity),
-            facecolor="none",
-            lw=6,
-        )
-        ax.add_patch(patch)
-
         ax.plot(
             [verts[0][0]],
             [verts[0][1]],
@@ -187,37 +198,38 @@ def write_panel_as_images(
     plot_stats()
     fig_mpl.savefig("panel/000400.png", transparent=True)
 
-    # def get_map_clips(
-    #     garmin_segment: GarminSegment,
-    #     garmin_start_time: datetime,
-    #     video_length: timedelta,
-    #     stats_refresh_period: timedelta,
-    #     inner_marker_size: int,
-    #     outer_marker_size: int,
-    # ) -> Tuple[ImageClip, VideoClip, VideoClip]:
-    #     def get_segment_clip():
-    #         frame = mplfig_to_npimage(fig_mpl)
-    #         x, y, _ = frame.shape
-    #         mask = (np.sum(frame, axis=2) > 10).reshape(x, y)
 
-    #         mask = ImageClip(mask, duration=video_length.total_seconds(), ismask=True)
-    #         clip = ImageClip(frame, duration=video_length.total_seconds())
+#     def get_map_clips(
+#         garmin_segment: GarminSegment,
+#         garmin_start_time: datetime,
+#         video_length: timedelta,
+#         stats_refresh_period: timedelta,
+#         inner_marker_size: int,
+#         outer_marker_size: int,
+#     ) -> Tuple[ImageClip, VideoClip, VideoClip]:
+#         def get_segment_clip():
+#             frame = mplfig_to_npimage(fig_mpl)
+#             x, y, _ = frame.shape
+#             mask = (np.sum(frame, axis=2) > 10).reshape(x, y)
 
-    #         return clip.set_mask(mask)
+#             mask = ImageClip(mask, duration=video_length.total_seconds(), ismask=True)
+#             clip = ImageClip(frame, duration=video_length.total_seconds())
 
-    # def get_location_marker_clip(marker_size: int):
-    #     fig_mpl = plt.figure(frameon=False, facecolor="black")
-    #     ax = fig_mpl.add_axes([0, 0, 1, 1])
-    #     ax.set_facecolor("black")
+#             return clip.set_mask(mask)
 
-    #     (marker,) = ax.plot(
-    #         [verts[0][0]],
-    #         [verts[0][1]],
-    #         marker="o",
-    #         markersize=marker_size,
-    #         markerfacecolor="white",
-    #         markeredgecolor="white",
-    #     )
+#     def get_location_marker_clip(marker_size: int):
+#         fig_mpl = plt.figure(frameon=False, facecolor="black")
+#         ax = fig_mpl.add_axes([0, 0, 1, 1])
+#         ax.set_facecolor("black")
+
+#         (marker,) = ax.plot(
+#             [verts[0][0]],
+#             [verts[0][1]],
+#             marker="o",
+#             markersize=marker_size,
+#             markerfacecolor="white",
+#             markeredgecolor="white",
+#         )
 
 
 #         ax.set_xlim(min_x - (dx * 0.01), max_x + (dx * 0.01))

@@ -1,11 +1,11 @@
 import argparse
-import go_pro
 from coordinate import (
     GarminSegment,
     GarminCoordinate,
 )
 from datetime import timedelta
 import render
+from video import GoProVideo
 
 parser = argparse.ArgumentParser(
     description="Program to add metadata to cycling video from GoPro"
@@ -60,27 +60,24 @@ if __name__ == "__main__":
         seconds=args["first_move_time_gps_search_window_in_secs"][1]
     )
     first_move_time = timedelta(seconds=args["first_move_time_in_secs"])
-
-    video_length = (
-        timedelta(seconds=args["video_length_in_secs"])
-        if args["video_length_in_secs"] is not None
-        else go_pro.get_video_length(args["video_file"])
-    )
     video_offset = timedelta(seconds=args["video_offset_start_in_secs"])
     video_stats_refresh_rate = timedelta(
         seconds=args["video_stats_refresh_rate_in_secs"]
     )
 
-    go_pro_start_time, _ = go_pro.get_start_and_end_time(args["video_file"])
+    video = GoProVideo(args["video_file"])
 
-    garmin_coordinates = GarminCoordinate.load_coordinates_from_fit_file(
-        args["fit_file"]
+    video_length = (
+        timedelta(seconds=args["video_length_in_secs"])
+        if args["video_length_in_secs"] is not None
+        else video.get_duration()
     )
-    garmin_segment = GarminSegment(garmin_coordinates)
+
+    garmin_segment = GarminSegment.load_from_fit_file(args["fit_file"])
 
     left_search, right_search = (
-        go_pro_start_time + first_move_time + left_search_bound,
-        go_pro_start_time + first_move_time + right_search_bound,
+        video.get_start_time() + first_move_time + left_search_bound,
+        video.get_start_time() + first_move_time + right_search_bound,
     )
     print(
         f"Searching for first Garmin move time between {left_search} and {right_search}."
@@ -100,11 +97,11 @@ if __name__ == "__main__":
         )
 
     garmin_first_move_time = garmin_first_move_coordinate.timestamp
-    go_pro_first_move_time = go_pro_start_time + first_move_time
+    go_pro_first_move_time = video.get_start_time() + first_move_time
 
     garmin_time_shift = garmin_first_move_time - go_pro_first_move_time
 
-    garmin_start_time = go_pro_start_time + video_offset + garmin_time_shift
+    garmin_start_time = video.get_start_time() + video_offset + garmin_time_shift
 
     render.write_video(
         args["video_file"],
