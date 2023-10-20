@@ -8,6 +8,8 @@ from typing import Optional
 from typing import Any, Tuple, List, Dict
 from video import GoProVideo
 from multiprocessing import pool
+import os
+import shutil
 
 STATS_LABEL_FONT_SIZE = 70
 STATS_FONT_SIZE = 200
@@ -20,7 +22,7 @@ class Renderer:
 class ThreadedPanelRenderer(Renderer):
     def __init__(
         self,
-        garmin_segment: GarminSegment,
+        segment: GarminSegment,
         video: GoProVideo,
         output_folder: str,
         frames_per_second: int,
@@ -29,11 +31,13 @@ class ThreadedPanelRenderer(Renderer):
         map_opacity: float,
         map_marker_size: int,
         stat_keys_and_labels: List[Tuple[str, str]],
+        stats_x_position: float,
         stats_y_range: Tuple[float, float],
+        stat_label_y_position_delta: float,
         stats_opacity: float,
         num_threads: int,
     ) -> None:
-        self.garmin_segment = garmin_segment
+        self.segment = segment
         self.video = video
         self.output_folder = output_folder
         self.frames_per_second = frames_per_second
@@ -42,11 +46,19 @@ class ThreadedPanelRenderer(Renderer):
         self.map_opacity = map_opacity
         self.map_marker_size = map_marker_size
         self.stat_keys_and_labels = stat_keys_and_labels
+        self.stats_x_position = stats_x_position
         self.stats_y_range = stats_y_range
+        self.stat_label_y_position_delta = stat_label_y_position_delta
         self.stats_opacity = stats_opacity
         self.num_threads = num_threads
 
+    def clean_output_folder(self) -> None:
+        if os.path.exists(self.output_folder):
+            shutil.rmtree(self.output_folder)
+        os.makedirs(self.output_folder, exist_ok=True)
+
     def render(self) -> None:
+        self.clean_output_folder()
         subsegments = []
         for thread in range(self.num_threads):
             subsegment = self.get_subsegment_for_thread(thread)
@@ -55,22 +67,22 @@ class ThreadedPanelRenderer(Renderer):
         pool.Pool(self.num_threads).map(self.render_with_single_thread, subsegments)
 
     def get_subsegment_for_thread(self, thread: int) -> GarminSegment:
-        subsegment_length = self.garmin_segment.get_length() / self.num_threads
-        start_time = self.garmin_segment.get_start_time() + (subsegment_length * thread)
+        subsegment_length = self.segment.get_length() / self.num_threads
+        start_time = self.segment.get_start_time() + (subsegment_length * thread)
         end_time = start_time + subsegment_length
-        return self.garmin_segment.get_subsegment(
+        return self.segment.get_subsegment(
             start_time, end_time, timedelta(seconds=1 / self.frames_per_second)
         )
 
     def render_with_single_thread(self, args):
         thread_number, subsegment = args
         renderer = PanelRenderer(
-            subsegment,
-            self.video,
-            self.output_folder,
-            thread_number,
-            self.frames_per_second,
-            self.map_marker_size,
+            **{
+                **self.__dict__,
+                "segment": self.segment,
+                "subsegment": subsegment,
+                "thread_number": thread_number,
+            },
         )
         renderer.render()
 
@@ -78,11 +90,13 @@ class ThreadedPanelRenderer(Renderer):
 class PanelRenderer(Renderer):
     def __init__(
         self,
-        garmin_segment: GarminSegment,
+        segment: GarminSegment,
+        subsegment: GarminSegment,
         video: GoProVideo,
         output_folder: str,
         thread_number: int,
         frames_per_second: int,
+        panel_width: float,
         map_height: float,
         map_opacity: float,
         map_marker_size: int,
@@ -91,12 +105,15 @@ class PanelRenderer(Renderer):
         stats_y_range: Tuple[float, float],
         stat_label_y_position_delta: float,
         stats_opacity: float,
+        **_,
     ) -> None:
-        self.garmin_segment = garmin_segment
+        self.segment = segment
+        self.subsegment = subsegment
         self.video = video
         self.output_folder = output_folder
         self.thread_number = thread_number
         self.frames_per_second = frames_per_second
+        self.panel_width = panel_width
         self.map_height = map_height
         self.map_opacity = map_opacity
         self.map_marker_size = map_marker_size
@@ -111,6 +128,7 @@ class PanelRenderer(Renderer):
         # and only render it once
         self.plot_map()
         self.plot_marker()
+        self.plot_stats()
 
     def make_figure(self) -> None:
         width, height = self.video.get_resolution()
@@ -130,7 +148,7 @@ class PanelRenderer(Renderer):
         )
         self.map_axis.axis("off")
 
-        verts = [(c.longitude, c.latitude) for c in self.garmin_segment.coordinates]
+        verts = [(c.longitude, c.latitude) for c in self.segment.coordinates]
         codes = [Path.MOVETO] + [Path.CURVE3 for _ in range(len(verts) - 1)]
         path = Path(verts, codes)
         patch = patches.PathPatch(
@@ -153,7 +171,7 @@ class PanelRenderer(Renderer):
         self.map_axis.set_ylim(min_y - (dy * 0.01), max_y + (dy * 0.01))
 
     def plot_marker(self) -> None:
-        start = self.garmin_segment.coordinates[0]
+        start = self.segment.coordinates[0]
         (self.marker,) = self.map_axis.plot(
             [start.longitude],
             [start.latitude],
@@ -164,7 +182,7 @@ class PanelRenderer(Renderer):
         )
 
     def update_marker(self, time: datetime) -> None:
-        coordinate = self.garmin_segment.get_coordinate(time)
+        coordinate = self.segment.get_coordinate(time)
         self.marker.set_xdata([coordinate.longitude])
         self.marker.set_ydata([coordinate.latitude])
 
@@ -173,13 +191,14 @@ class PanelRenderer(Renderer):
         num_stats = len(self.stat_keys_and_labels)
         y_positions = list(np.linspace(*self.stats_y_range, num_stats))
         self.key_to_stat_map: Dict[str, Any] = {}
-        start = self.garmin_segment.coordinates[0]
+        start = self.segment.coordinates[0]
         for key_and_label, y_position in zip(self.stat_keys_and_labels, y_positions):
             key, label = key_and_label
+            value = start.__dict__[key]
             stat_text = self.stats_axis.text(
                 self.stats_x_position,
                 y_position,
-                start.__dict__[key],
+                "0" if value is None else str(int(value)),
                 color="white",
                 fontsize=STATS_FONT_SIZE,
             )
@@ -190,25 +209,27 @@ class PanelRenderer(Renderer):
                 color="white",
                 fontsize=STATS_LABEL_FONT_SIZE,
             )
-            stat_text.set_opacity(self.stats_opacity)
-            label_text.set_opacity(self.stats_opacity)
+            stat_text.set_alpha(self.stats_opacity)
+            label_text.set_alpha(self.stats_opacity)
 
             self.key_to_stat_map[key] = stat_text
 
     def update_stats(self, time: datetime) -> None:
-        coordinate = self.garmin_segment.get_coordinate(time)
+        coordinate = self.segment.get_coordinate(time)
         for key, stat in self.key_to_stat_map.items():
             value = coordinate.__dict__[key]
-            stat.set_text(value)
+            stat.set_text("0" if value is None else str(int(value)))
 
     def render(self) -> None:
         frame = 0
-        for coordinate in self.garmin_segment.get_iterator(
+        for coordinate in self.segment.get_iterator(
             timedelta(seconds=(1 / self.frames_per_second))
         ):
             self.update_marker(coordinate.timestamp)
             self.update_stats(coordinate.timestamp)
-            self.figure.savefig(f"{self.output_folder}/{self.thread_number}{frame:8}")
+            self.figure.savefig(
+                f"{self.output_folder}/{self.thread_number}{frame:08}", transparent=True
+            )
             frame += 1
 
 

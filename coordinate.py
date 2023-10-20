@@ -309,7 +309,7 @@ class GarminSegment(Segment):
         return None
 
     @staticmethod
-    def load_from_fit_file(path: str) -> List["GarminCoordinate"]:
+    def load_from_fit_file(path: str) -> "GarminSegment":
         stream = Stream.from_file(path)
 
         decoder = Decoder(stream)
