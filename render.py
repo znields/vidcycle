@@ -1,10 +1,9 @@
 from datetime import timedelta, datetime
-from coordinate import GarminSegment
+from coordinate import GarminSegment, GarminCoordinate
 import matplotlib.pyplot as plt
 import numpy as np
 import matplotlib.patches as patches
 from matplotlib.path import Path
-from typing import Optional
 from typing import Any, Tuple, List, Dict
 from video import GoProVideo
 from multiprocessing import pool
@@ -181,8 +180,7 @@ class PanelRenderer(Renderer):
             markeredgecolor="white",
         )
 
-    def update_marker(self, time: datetime) -> None:
-        coordinate = self.segment.get_coordinate(time)
+    def update_marker(self, coordinate: GarminCoordinate) -> None:
         self.marker.set_xdata([coordinate.longitude])
         self.marker.set_ydata([coordinate.latitude])
 
@@ -214,19 +212,18 @@ class PanelRenderer(Renderer):
 
             self.key_to_stat_map[key] = stat_text
 
-    def update_stats(self, time: datetime) -> None:
-        coordinate = self.segment.get_coordinate(time)
+    def update_stats(self, coordinate: GarminCoordinate) -> None:
         for key, stat in self.key_to_stat_map.items():
             value = coordinate.__dict__[key]
             stat.set_text("0" if value is None else str(int(value)))
 
     def render(self) -> None:
         frame = 0
-        for coordinate in self.segment.get_iterator(
+        for coordinate in self.subsegment.get_iterator(
             timedelta(seconds=(1 / self.frames_per_second))
         ):
-            self.update_marker(coordinate.timestamp)
-            self.update_stats(coordinate.timestamp)
+            self.update_marker(coordinate)
+            self.update_stats(coordinate)
             self.figure.savefig(
                 f"{self.output_folder}/{self.thread_number}{frame:08}", transparent=True
             )
