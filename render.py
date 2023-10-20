@@ -5,19 +5,12 @@ import numpy as np
 import matplotlib.patches as patches
 from matplotlib.path import Path
 from typing import Optional
-from typing import Any, Tuple, List
+from typing import Any, Tuple, List, Dict
 from video import GoProVideo
-import multiprocessing
+from multiprocessing import pool
 
-STATS_X_POSITION = 0.15
-POWER_Y_POSITION = 0.25
-HEART_RATE_Y_POSITION = 0.45
-CADENCE_Y_POSITION = 0.65
-STAT_LABEL_Y_POSITION_DIFFERENCE = 0.11
 STATS_LABEL_FONT_SIZE = 70
 STATS_FONT_SIZE = 200
-
-NUMBER_OF_THREADS = 63
 
 
 class Renderer:
@@ -28,26 +21,58 @@ class ThreadedPanelRenderer(Renderer):
     def __init__(
         self,
         garmin_segment: GarminSegment,
-        go_pro_video: GoProVideo,
+        video: GoProVideo,
         output_folder: str,
         frames_per_second: int,
         panel_width: float,
         map_height: float,
+        map_opacity: float,
+        map_marker_size: int,
+        stat_keys_and_labels: List[Tuple[str, str]],
+        stats_y_range: Tuple[float, float],
+        stats_opacity: float,
         num_threads: int,
     ) -> None:
         self.garmin_segment = garmin_segment
-        self.go_pro_video = go_pro_video
+        self.video = video
         self.output_folder = output_folder
         self.frames_per_second = frames_per_second
         self.panel_width = panel_width
         self.map_height = map_height
+        self.map_opacity = map_opacity
+        self.map_marker_size = map_marker_size
+        self.stat_keys_and_labels = stat_keys_and_labels
+        self.stats_y_range = stats_y_range
+        self.stats_opacity = stats_opacity
         self.num_threads = num_threads
 
     def render(self) -> None:
-        pass
+        subsegments = []
+        for thread in range(self.num_threads):
+            subsegment = self.get_subsegment_for_thread(thread)
+            subsegments.append((thread, subsegment))
 
-    def make_figure():
-        pass
+        pool.Pool(self.num_threads).map(self.render_with_single_thread, subsegments)
+
+    def get_subsegment_for_thread(self, thread: int) -> GarminSegment:
+        subsegment_length = self.garmin_segment.get_length() / self.num_threads
+        start_time = self.garmin_segment.get_start_time() + (subsegment_length * thread)
+        end_time = start_time + subsegment_length
+        return self.garmin_segment.get_subsegment(
+            start_time, end_time, timedelta(seconds=1 / self.frames_per_second)
+        )
+
+    def render_with_single_thread(self, args):
+        thread_number, subsegment = args
+        renderer = PanelRenderer(
+            subsegment,
+            self.video,
+            self.output_folder,
+            thread_number,
+            self.frames_per_second,
+            self.map_marker_size,
+        )
+        renderer.render()
 
 
 class PanelRenderer(Renderer):
@@ -56,18 +81,38 @@ class PanelRenderer(Renderer):
         garmin_segment: GarminSegment,
         video: GoProVideo,
         output_folder: str,
+        thread_number: int,
         frames_per_second: int,
+        map_height: float,
+        map_opacity: float,
+        map_marker_size: int,
+        stat_keys_and_labels: List[Tuple[str, str]],
+        stats_x_position: float,
+        stats_y_range: Tuple[float, float],
+        stat_label_y_position_delta: float,
+        stats_opacity: float,
     ) -> None:
         self.garmin_segment = garmin_segment
         self.video = video
         self.output_folder = output_folder
+        self.thread_number = thread_number
         self.frames_per_second = frames_per_second
+        self.map_height = map_height
+        self.map_opacity = map_opacity
+        self.map_marker_size = map_marker_size
+        self.stat_keys_and_labels = stat_keys_and_labels
+        self.stats_x_position = stats_x_position
+        self.stats_y_range = stats_y_range
+        self.stat_label_y_position_delta = stat_label_y_position_delta
+        self.stats_opacity = stats_opacity
         self.make_figure()
 
-    def render(self) -> None:
-        pass
+        # for now, let's keep the map static
+        # and only render it once
+        self.plot_map()
+        self.plot_marker()
 
-    def make_figure(self):
+    def make_figure(self) -> None:
         width, height = self.video.get_resolution()
         figure = plt.figure(
             frameon=False,
@@ -79,204 +124,94 @@ class PanelRenderer(Renderer):
         )
         self.figure = figure
 
-    def plot_map(self):
-        ax = self.figure.add_axes([0, 1 - self.map_height, 1, self.map_height])
-        ax.axis("off")
+    def plot_map(self) -> None:
+        self.map_axis = self.figure.add_axes(
+            [0, 1 - self.map_height, 1, self.map_height]
+        )
+        self.map_axis.axis("off")
 
+        verts = [(c.longitude, c.latitude) for c in self.garmin_segment.coordinates]
         codes = [Path.MOVETO] + [Path.CURVE3 for _ in range(len(verts) - 1)]
         path = Path(verts, codes)
         patch = patches.PathPatch(
             path,
-            edgecolor=(1, 1, 1, map_opacity),
+            edgecolor=(1, 1, 1, self.map_opacity),
             facecolor="none",
             lw=6,
         )
-        ax.add_patch(patch)
+
+        xs = [vert[0] for vert in verts]
+        ys = [vert[1] for vert in verts]
+
+        min_x, max_x = min(xs), max(xs)
+        min_y, max_y = min(ys), max(ys)
+
+        dx, dy = max_x - min_x, max_y - min_y
+
+        self.map_axis.add_patch(patch)
+        self.map_axis.set_xlim(min_x - (dx * 0.01), max_x + (dx * 0.01))
+        self.map_axis.set_ylim(min_y - (dy * 0.01), max_y + (dy * 0.01))
+
+    def plot_marker(self) -> None:
+        start = self.garmin_segment.coordinates[0]
+        (self.marker,) = self.map_axis.plot(
+            [start.longitude],
+            [start.latitude],
+            marker="o",
+            markersize=self.map_marker_size,
+            markerfacecolor="white",
+            markeredgecolor="white",
+        )
+
+    def update_marker(self, time: datetime) -> None:
+        coordinate = self.garmin_segment.get_coordinate(time)
+        self.marker.set_xdata([coordinate.longitude])
+        self.marker.set_ydata([coordinate.latitude])
+
+    def plot_stats(self) -> None:
+        self.stats_axis = self.figure.add_axes([0, 0, 1, 1 - self.map_height])
+        num_stats = len(self.stat_keys_and_labels)
+        y_positions = list(np.linspace(*self.stats_y_range, num_stats))
+        self.key_to_stat_map: Dict[str, Any] = {}
+        start = self.garmin_segment.coordinates[0]
+        for key_and_label, y_position in zip(self.stat_keys_and_labels, y_positions):
+            key, label = key_and_label
+            stat_text = self.stats_axis.text(
+                self.stats_x_position,
+                y_position,
+                start.__dict__[key],
+                color="white",
+                fontsize=STATS_FONT_SIZE,
+            )
+            label_text = self.stats_axis.text(
+                self.stats_x_position,
+                y_position + self.stat_label_y_position_delta,
+                label,
+                color="white",
+                fontsize=STATS_LABEL_FONT_SIZE,
+            )
+            stat_text.set_opacity(self.stats_opacity)
+            label_text.set_opacity(self.stats_opacity)
+
+            self.key_to_stat_map[key] = stat_text
+
+    def update_stats(self, time: datetime) -> None:
+        coordinate = self.garmin_segment.get_coordinate(time)
+        for key, stat in self.key_to_stat_map.items():
+            value = coordinate.__dict__[key]
+            stat.set_text(value)
+
+    def render(self) -> None:
+        frame = 0
+        for coordinate in self.garmin_segment.get_iterator(
+            timedelta(seconds=(1 / self.frames_per_second))
+        ):
+            self.update_marker(coordinate.timestamp)
+            self.update_stats(coordinate.timestamp)
+            self.figure.savefig(f"{self.output_folder}/{self.thread_number}{frame:8}")
+            frame += 1
 
 
 class VideoRenderer(Renderer):
     def __init__(self, output_filepath: str) -> None:
         self.output_filepath = output_filepath
-
-
-def write_video(
-    in_video: GoProVideo,
-    out_video_path: Optional[str],
-    garmin_segment: GarminSegment,
-    garmin_start_time: datetime,
-    video_length: timedelta,
-    video_offset: timedelta,
-    stats_refresh_period: timedelta,
-) -> None:
-    write_panel_as_images(in_video, garmin_segment, stats_refresh_period)
-
-
-def write_panel_as_images(
-    in_video: GoProVideo,
-    garmin_segment: GarminSegment,
-    stats_refresh_period: timedelta,
-    panel_width: float = 0.2,
-    map_height: float = 0.3,
-    map_opacity: float = 0.9,
-    marker_size: int = 15,
-):
-    coordinates = [c for c in garmin_segment.get_iterator(stats_refresh_period)]
-    verts = [(c.longitude, c.latitude) for c in coordinates]
-    xs = [vert.longitude for vert in coordinates]
-    ys = [vert.latitude for vert in coordinates]
-    min_x, max_x = min(xs), max(xs)
-    min_y, max_y = min(ys), max(ys)
-    dx, dy = max_x - min_x, max_y - min_y
-    width, height = in_video.get_video_resolution()
-
-    width, height = get_video_resolution(in_video_path)
-
-    def plot_map_and_marker():
-        ax.plot(
-            [verts[0][0]],
-            [verts[0][1]],
-            marker="o",
-            markersize=marker_size,
-            markerfacecolor="white",
-            markeredgecolor="white",
-        )
-        ax.set_xlim(min_x - (dx * 0.01), max_x + (dx * 0.01))
-        ax.set_ylim(min_y - (dy * 0.01), max_y + (dy * 0.01))
-
-    def plot_stats():
-        ax = fig_mpl.add_axes([0, 0, 1, 1 - map_height])
-        ax.axis("off")
-
-        texts = [
-            ax.text(
-                STATS_X_POSITION,
-                POWER_Y_POSITION,
-                str(int(coordinates[400].power)),
-                fontsize=STATS_FONT_SIZE,
-                color="white",
-            ),
-            ax.text(
-                STATS_X_POSITION,
-                POWER_Y_POSITION + STAT_LABEL_Y_POSITION_DIFFERENCE,
-                "PWR",
-                fontsize=STATS_LABEL_FONT_SIZE,
-                color="white",
-            ),
-            ax.text(
-                STATS_X_POSITION,
-                HEART_RATE_Y_POSITION,
-                str(int(coordinates[400].heart_rate)),
-                fontsize=STATS_FONT_SIZE,
-                color="white",
-            ),
-            ax.text(
-                STATS_X_POSITION,
-                HEART_RATE_Y_POSITION + STAT_LABEL_Y_POSITION_DIFFERENCE,
-                "HR",
-                fontsize=STATS_LABEL_FONT_SIZE,
-                color="white",
-            ),
-            ax.text(
-                STATS_X_POSITION,
-                CADENCE_Y_POSITION,
-                str(int(coordinates[400].cadence)),
-                fontsize=STATS_FONT_SIZE,
-                color="white",
-            ),
-            ax.text(
-                STATS_X_POSITION,
-                CADENCE_Y_POSITION + STAT_LABEL_Y_POSITION_DIFFERENCE,
-                "RPM",
-                fontsize=STATS_LABEL_FONT_SIZE,
-                color="white",
-            ),
-        ]
-        for text in texts:
-            text.set_alpha(map_opacity)
-
-    plot_map_and_marker()
-    plot_stats()
-    fig_mpl.savefig("panel/000400.png", transparent=True)
-
-
-#     def get_map_clips(
-#         garmin_segment: GarminSegment,
-#         garmin_start_time: datetime,
-#         video_length: timedelta,
-#         stats_refresh_period: timedelta,
-#         inner_marker_size: int,
-#         outer_marker_size: int,
-#     ) -> Tuple[ImageClip, VideoClip, VideoClip]:
-#         def get_segment_clip():
-#             frame = mplfig_to_npimage(fig_mpl)
-#             x, y, _ = frame.shape
-#             mask = (np.sum(frame, axis=2) > 10).reshape(x, y)
-
-#             mask = ImageClip(mask, duration=video_length.total_seconds(), ismask=True)
-#             clip = ImageClip(frame, duration=video_length.total_seconds())
-
-#             return clip.set_mask(mask)
-
-#     def get_location_marker_clip(marker_size: int):
-#         fig_mpl = plt.figure(frameon=False, facecolor="black")
-#         ax = fig_mpl.add_axes([0, 0, 1, 1])
-#         ax.set_facecolor("black")
-
-#         (marker,) = ax.plot(
-#             [verts[0][0]],
-#             [verts[0][1]],
-#             marker="o",
-#             markersize=marker_size,
-#             markerfacecolor="white",
-#             markeredgecolor="white",
-#         )
-
-
-#         ax.set_xlim(min_x - (dx * 0.01), max_x + (dx * 0.01))
-#         ax.set_ylim(min_y - (dy * 0.01), max_y + (dy * 0.01))
-
-#         def make_frame_mpl(t):
-#             t = timedelta(seconds=t)
-#             coordinate = garmin_segment.get_coordinate(garmin_start_time + t)
-
-#             marker.set_xdata([coordinate.longitude])
-#             marker.set_ydata([coordinate.latitude])
-
-#             return mplfig_to_npimage(fig_mpl)
-
-#         def make_mask_mpl(t):
-#             t = timedelta(seconds=t)
-#             coordinate = garmin_segment.get_coordinate(garmin_start_time + t)
-
-#             marker.set_xdata([coordinate.longitude])
-#             marker.set_ydata([coordinate.latitude])
-
-#             frame = make_frame_mpl(t.total_seconds())
-#             x, y, _ = frame.shape
-#             mask = (np.sum(frame, axis=2) > 10).reshape(x, y, 1)
-#             return mask
-
-#         mask = VideoClip(
-#             make_mask_mpl, duration=video_length.total_seconds(), ismask=True
-#         )
-#         clip = VideoClip(make_frame_mpl, duration=video_length.total_seconds())
-
-#         return clip.set_mask(mask)
-
-#     return (
-#         get_segment_clip(),
-#         get_location_marker_clip(inner_marker_size),
-#         get_location_marker_clip(outer_marker_size),
-#     )
-
-
-# def write_optimized_video(in_video_path: str, optimized_video_resolution: int) -> str:
-#     filename, ext = in_video_path.split(".")
-#     path = f"{filename}_{optimized_video_resolution}.{ext}"
-#     if os.path.isfile(path):
-#         print(f"Found pre-optimized video at path '{path}'")
-#         return path
-
-#     clip = VideoFileClip(in_video_path).resize(height=optimized_video_resolution)
-#     clip.write_videofile(path, threads=64)
-#     return path

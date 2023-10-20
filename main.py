@@ -4,7 +4,7 @@ from coordinate import (
     GarminCoordinate,
 )
 from datetime import timedelta
-import render
+from render import ThreadedPanelRenderer
 from video import GoProVideo
 
 parser = argparse.ArgumentParser(
@@ -103,12 +103,17 @@ if __name__ == "__main__":
 
     garmin_start_time = video.get_start_time() + video_offset + garmin_time_shift
 
-    render.write_video(
-        args["video_file"],
-        args["video_output_path"],
+    ThreadedPanelRenderer(
         garmin_segment,
-        garmin_start_time,
-        video_length,
-        video_offset,
-        video_stats_refresh_rate,
-    )
+        video,
+        "panel",
+        30,
+        0.2,
+        0.3,
+        0.9,
+        15,
+        [("power", "PWR"), ("speed", "MPH"), ("heart_rate", "HR"), ("cadence", "RPM")],
+        (0.25, 0.7),
+        0.9,
+        2,
+    ).render()

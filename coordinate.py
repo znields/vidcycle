@@ -185,6 +185,7 @@ class Segment:
                 reversed_coordinates.append(coordinate)
         return reversed_coordinates[::-1]
 
+    # TODO: optimize using binary search
     @functools.lru_cache(maxsize=None)
     def get_coordinate(self, time: datetime) -> Optional[Coordinate]:
         result = None
