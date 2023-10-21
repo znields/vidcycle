@@ -118,10 +118,17 @@ if __name__ == "__main__":
             ("cadence", "RPM"),
         ],
         stats_x_position=0.15,
-        stats_y_range=(0.05, 0.7),
+        stats_y_range=(0.15, 0.75),
         stat_label_y_position_delta=0.11,
         stats_opacity=0.9,
         num_threads=116,
     ).render()
 
-    VideoRenderer(video=video, panel_folder="panel", output_filepath="out.mp4", num_threads=116).render()
+    VideoRenderer(
+        video=video,
+        panel_folder="panel",
+        output_filepath="out.mp4",
+        num_threads=96,
+        video_length=video_length,
+        video_offset=video_offset,
+    ).render()

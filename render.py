@@ -240,21 +240,34 @@ class VideoRenderer(Renderer):
     def __init__(
         self,
         video: GoProVideo,
+        video_length: timedelta,
+        video_offset: timedelta,
         panel_folder: str,
         output_filepath: str,
         num_threads: int,
     ) -> None:
         self.video = video
+        self.video_length = video_length
+        self.video_offset = video_offset
         self.panel_folder = panel_folder
         self.output_filepath = output_filepath
+        self.num_threads = num_threads
 
     def render(self) -> None:
-        video = ffmpeg.input(self.video.video_path)
+        video = ffmpeg.input(
+            self.video.video_path,
+            ss=str(self.video_offset),
+            to=str(self.video_length + self.video_offset),
+        )
         panel_overlay = ffmpeg.input(
-            f"{self.panel_folder}/*.png", pattern_type="glob", framerate=30
+            f"{self.panel_folder}/*.png",
+            pattern_type="glob",
+            framerate=30,
         )
 
         video.overlay(panel_overlay).output(
             self.output_filepath,
-            threads=self.num_threads
+            threads=self.num_threads,
+            preset="ultrafast",
+            acodec="copy",
         ).run()
