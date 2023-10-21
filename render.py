@@ -254,7 +254,7 @@ class VideoRenderer(Renderer):
         self.num_threads = num_threads
 
     def render(self) -> None:
-        video = ffmpeg.input(
+        video_input = ffmpeg.input(
             self.video.video_path,
             ss=str(self.video_offset),
             to=str(self.video_length + self.video_offset),
@@ -265,9 +265,18 @@ class VideoRenderer(Renderer):
             framerate=30,
         )
 
-        video.overlay(panel_overlay).output(
+        video = video_input.video.overlay(panel_overlay)
+        audio = video_input.audio
+
+        cmd = ffmpeg.output(
+            video,
+            audio,
             self.output_filepath,
             threads=self.num_threads,
             preset="ultrafast",
             acodec="copy",
-        ).run()
+        )
+
+        print(f"\nRunning command: ffmpeg {' '.join(cmd.get_args())}\n\n")
+
+        cmd.run()
