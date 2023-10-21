@@ -171,8 +171,8 @@ class PanelRenderer(Renderer):
         dx, dy = max_x - min_x, max_y - min_y
 
         self.map_axis.add_patch(patch)
-        self.map_axis.set_xlim(min_x - (dx * 0.01), max_x + (dx * 0.01))
-        self.map_axis.set_ylim(min_y - (dy * 0.01), max_y + (dy * 0.01))
+        self.map_axis.set_xlim(min_x - (dx * 0.05), max_x + (dx * 0.01))
+        self.map_axis.set_ylim(min_y - (dy * 0.01), max_y + (dy * 0.05))
 
     def plot_marker(self) -> None:
         start = self.segment.coordinates[0]
