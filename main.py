@@ -124,4 +124,4 @@ if __name__ == "__main__":
         num_threads=116,
     ).render()
 
-    VideoRenderer(video=video, panel_folder="panel", output_filepath="out.mp4").render()
+    VideoRenderer(video=video, panel_folder="panel", output_filepath="out.mp4", num_threads=116).render()

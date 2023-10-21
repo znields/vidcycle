@@ -191,6 +191,7 @@ class PanelRenderer(Renderer):
 
     def plot_stats(self) -> None:
         self.stats_axis = self.figure.add_axes([0, 0, 1, 1 - self.map_height])
+        self.stats_axis.axis("off")
         num_stats = len(self.stat_keys_and_labels)
         y_positions = list(np.linspace(*self.stats_y_range, num_stats))
         self.key_to_stat_map: Dict[str, Any] = {}
@@ -241,6 +242,7 @@ class VideoRenderer(Renderer):
         video: GoProVideo,
         panel_folder: str,
         output_filepath: str,
+        num_threads: int,
     ) -> None:
         self.video = video
         self.panel_folder = panel_folder
@@ -252,4 +254,7 @@ class VideoRenderer(Renderer):
             f"{self.panel_folder}/*.png", pattern_type="glob", framerate=30
         )
 
-        video.overlay(panel_overlay).output(self.output_filepath).run()
+        video.overlay(panel_overlay).output(
+            self.output_filepath,
+            threads=self.num_threads
+        ).run()
