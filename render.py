@@ -9,6 +9,7 @@ from video import GoProVideo
 from multiprocessing import pool
 import os
 import shutil
+import ffmpeg
 
 STATS_LABEL_FONT_SIZE = 70
 STATS_FONT_SIZE = 200
@@ -22,6 +23,8 @@ class ThreadedPanelRenderer(Renderer):
     def __init__(
         self,
         segment: GarminSegment,
+        segment_start_time: datetime,
+        video_length: timedelta,
         video: GoProVideo,
         output_folder: str,
         frames_per_second: int,
@@ -37,6 +40,8 @@ class ThreadedPanelRenderer(Renderer):
         num_threads: int,
     ) -> None:
         self.segment = segment
+        self.segment_start_time = segment_start_time
+        self.video_length = video_length
         self.video = video
         self.output_folder = output_folder
         self.frames_per_second = frames_per_second
@@ -66,8 +71,8 @@ class ThreadedPanelRenderer(Renderer):
         pool.Pool(self.num_threads).map(self.render_with_single_thread, subsegments)
 
     def get_subsegment_for_thread(self, thread: int) -> GarminSegment:
-        subsegment_length = self.segment.get_length() / self.num_threads
-        start_time = self.segment.get_start_time() + (subsegment_length * thread)
+        subsegment_length = self.video_length / self.num_threads
+        start_time = self.segment_start_time + (subsegment_length * thread)
         end_time = start_time + subsegment_length
         return self.segment.get_subsegment(
             start_time, end_time, timedelta(seconds=1 / self.frames_per_second)
@@ -231,5 +236,20 @@ class PanelRenderer(Renderer):
 
 
 class VideoRenderer(Renderer):
-    def __init__(self, output_filepath: str) -> None:
+    def __init__(
+        self,
+        video: GoProVideo,
+        panel_folder: str,
+        output_filepath: str,
+    ) -> None:
+        self.video = video
+        self.panel_folder = panel_folder
         self.output_filepath = output_filepath
+
+    def render(self) -> None:
+        video = ffmpeg.input(self.video.video_path)
+        panel_overlay = ffmpeg.input(
+            f"{self.panel_folder}/*.png", pattern_type="glob", framerate=30
+        )
+
+        video.overlay(panel_overlay).output(self.output_filepath).run()

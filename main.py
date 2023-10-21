@@ -1,10 +1,7 @@
 import argparse
-from coordinate import (
-    GarminSegment,
-    GarminCoordinate,
-)
+from coordinate import GarminSegment
 from datetime import timedelta
-from render import ThreadedPanelRenderer
+from render import ThreadedPanelRenderer, VideoRenderer
 from video import GoProVideo
 
 parser = argparse.ArgumentParser(
@@ -105,6 +102,8 @@ if __name__ == "__main__":
 
     ThreadedPanelRenderer(
         segment=garmin_segment,
+        segment_start_time=garmin_start_time,
+        video_length=video_length,
         video=video,
         output_folder="panel",
         frames_per_second=30,
@@ -124,3 +123,5 @@ if __name__ == "__main__":
         stats_opacity=0.9,
         num_threads=116,
     ).render()
+
+    VideoRenderer(video=video, panel_folder="panel", output_filepath="out.mp4").render()
