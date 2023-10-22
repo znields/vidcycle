@@ -231,7 +231,7 @@ class PanelRenderer(Renderer):
             self.update_marker(coordinate)
             self.update_stats(coordinate)
             self.figure.savefig(
-                f"{self.output_folder:04}/{self.thread_number}{frame:08}",
+                f"{self.output_folder}/{self.thread_number:04}{frame:08}",
                 transparent=True,
             )
             frame += 1
