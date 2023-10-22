@@ -3,6 +3,7 @@ from coordinate import GarminSegment
 from datetime import timedelta
 from render import ThreadedPanelRenderer, VideoRenderer
 from video import GoProVideo
+import time
 
 parser = argparse.ArgumentParser(
     description="Program to add metadata to cycling video from GoPro"
@@ -100,6 +101,8 @@ if __name__ == "__main__":
 
     garmin_start_time = video.get_start_time() + video_offset + garmin_time_shift
 
+    render_start_time = time.time()
+
     ThreadedPanelRenderer(
         segment=garmin_segment,
         segment_start_time=garmin_start_time,
@@ -132,3 +135,5 @@ if __name__ == "__main__":
         video_length=video_length,
         video_offset=video_offset,
     ).render()
+
+    print(f"\nTotal render time: {time.time() - render_start_time} seconds.")
