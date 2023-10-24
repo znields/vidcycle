@@ -126,7 +126,7 @@ if __name__ == "__main__":
         video=video,
         panel_folder="panel",
         output_filepath="out.mp4",
-        num_threads=render_config["videolNumberOfThreads"],
+        num_threads=render_config["videoNumberOfThreads"],
         video_length=video_length,
         video_offset=video_offset,
     ).render()
