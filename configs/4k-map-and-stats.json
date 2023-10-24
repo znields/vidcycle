@@ -1,0 +1,32 @@
+{
+    "numberOfThreads": 116,
+    "panelWidth": 0.2,
+    "stats": {
+        "height": 0.7,
+        "xPosition": 0.15,
+        "yPositionRange": [
+            0.2,
+            0.7
+        ],
+        "opacity": 0.9,
+        "keysAndLabels": [
+            [
+                "power",
+                "PWR"
+            ],
+            [
+                "speed",
+                "MPH"
+            ],
+            [
+                "cadence",
+                "RPM"
+            ]
+        ]
+    },
+    "map": {
+        "height": 0.3,
+        "opacity": 0.9,
+        "markerSize": 15
+    }
+}

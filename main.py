@@ -4,18 +4,13 @@ from datetime import timedelta
 from render import ThreadedPanelRenderer, VideoRenderer
 from video import GoProVideo
 import time
+import json
 
 parser = argparse.ArgumentParser(
     description="Program to add metadata to cycling video from GoPro"
 )
 parser.add_argument("--fit-file", help="GPX file of ride", required=True, type=str)
 parser.add_argument("--video-file", help="Video file of ride", required=True, type=str)
-parser.add_argument(
-    "--video-stats-refresh-rate-in-secs",
-    help="How often the video stats refresh in seconds",
-    default=0.1,
-    type=float,
-)
 parser.add_argument(
     "--video-length-in-secs",
     help="How many seconds the video should last",
@@ -47,6 +42,12 @@ parser.add_argument(
     type=float,
     nargs=2,
 )
+parser.add_argument(
+    "--render-config-file",
+    help="Render config file to determine video render style",
+    required=True,
+    type=str,
+)
 args = vars(parser.parse_args())
 
 
@@ -59,9 +60,6 @@ if __name__ == "__main__":
     )
     first_move_time = timedelta(seconds=args["first_move_time_in_secs"])
     video_offset = timedelta(seconds=args["video_offset_start_in_secs"])
-    video_stats_refresh_rate = timedelta(
-        seconds=args["video_stats_refresh_rate_in_secs"]
-    )
 
     video = GoProVideo(args["video_file"])
 
@@ -70,6 +68,9 @@ if __name__ == "__main__":
         if args["video_length_in_secs"] is not None
         else video.get_duration()
     )
+
+    render_config_file = open(args["render_config_file"])
+    render_config = json.loads(render_config_file.read())
 
     garmin_segment = GarminSegment.load_from_fit_file(args["fit_file"])
 
@@ -109,22 +110,16 @@ if __name__ == "__main__":
         video_length=video_length,
         video=video,
         output_folder="panel",
-        frames_per_second=30,
-        panel_width=0.2,
-        map_height=0.3,
-        map_opacity=0.9,
-        map_marker_size=15,
-        stat_keys_and_labels=[
-            ("power", "PWR"),
-            ("speed", "MPH"),
-            ("heart_rate", "HR"),
-            ("cadence", "RPM"),
-        ],
-        stats_x_position=0.15,
-        stats_y_range=(0.15, 0.75),
-        stat_label_y_position_delta=0.11,
-        stats_opacity=0.9,
-        num_threads=116,
+        num_threads=render_config["numberOfThreads"],
+        panel_width=render_config["panelWidth"],
+        map_height=render_config["map"]["height"],
+        map_opacity=render_config["map"]["opacity"],
+        map_marker_size=render_config["map"]["markerSize"],
+        stat_keys_and_labels=render_config["map"]["keysAndLabels"],
+        stats_x_position=render_config["stats"]["xPosition"],
+        stats_y_range=render_config["stats"]["yPositionRange"],
+        stat_label_y_position_delta=render_config["stats"]["yPositionRange"],
+        stats_opacity=render_config["stats"]["opacity"],
     ).render()
 
     VideoRenderer(

@@ -27,7 +27,6 @@ class ThreadedPanelRenderer(Renderer):
         video_length: timedelta,
         video: GoProVideo,
         output_folder: str,
-        frames_per_second: int,
         panel_width: float,
         map_height: float,
         map_opacity: float,
@@ -44,7 +43,6 @@ class ThreadedPanelRenderer(Renderer):
         self.video_length = video_length
         self.video = video
         self.output_folder = output_folder
-        self.frames_per_second = frames_per_second
         self.panel_width = panel_width
         self.map_height = map_height
         self.map_opacity = map_opacity
@@ -75,7 +73,7 @@ class ThreadedPanelRenderer(Renderer):
         start_time = self.segment_start_time + (subsegment_length * thread)
         end_time = start_time + subsegment_length
         return self.segment.get_subsegment(
-            start_time, end_time, timedelta(seconds=1 / self.frames_per_second)
+            start_time, end_time, timedelta(seconds=1 / self.video.get_fps())
         )
 
     def render_with_single_thread(self, args):
@@ -99,7 +97,6 @@ class PanelRenderer(Renderer):
         video: GoProVideo,
         output_folder: str,
         thread_number: int,
-        frames_per_second: int,
         panel_width: float,
         map_height: float,
         map_opacity: float,
@@ -116,7 +113,6 @@ class PanelRenderer(Renderer):
         self.video = video
         self.output_folder = output_folder
         self.thread_number = thread_number
-        self.frames_per_second = frames_per_second
         self.panel_width = panel_width
         self.map_height = map_height
         self.map_opacity = map_opacity
@@ -226,7 +222,7 @@ class PanelRenderer(Renderer):
     def render(self) -> None:
         frame = 0
         for coordinate in self.subsegment.get_iterator(
-            timedelta(seconds=(1 / self.frames_per_second))
+            timedelta(seconds=(1 / self.video.get_fps()))
         ):
             self.update_marker(coordinate)
             self.update_stats(coordinate)
@@ -263,7 +259,7 @@ class VideoRenderer(Renderer):
         panel_overlay = ffmpeg.input(
             f"{self.panel_folder}/*.png",
             pattern_type="glob",
-            framerate=30,
+            framerate=self.video.get_fps(),
         )
 
         video = video_input.video.overlay(panel_overlay)

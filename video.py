@@ -36,6 +36,30 @@ class Video:
         video_stream = video_streams[0]
         return video_stream["width"], video_stream["height"]
 
+    @functools.cache
+    def get_fps(self):
+        rate = str(
+            subprocess.run(
+                [
+                    "ffprobe",
+                    "-v",
+                    "0",
+                    "-of",
+                    "compact=p=0",
+                    "-select_streams",
+                    "0",
+                    "-show_entries",
+                    "stream=r_frame_rate",
+                    self.video_path,
+                ],
+                capture_output=True,
+            ).stdout
+        )
+
+        numerator, denominator = rate[rate.index("=") + 1 : rate.index("|")].split("/")
+
+        return int(numerator) / int(denominator)
+
 
 class GoProVideo(Video):
     @functools.cache
