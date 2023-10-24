@@ -9,7 +9,7 @@ import json
 parser = argparse.ArgumentParser(
     description="Program to add metadata to cycling video from GoPro"
 )
-parser.add_argument("--fit-file", help="GPX file of ride", required=True, type=str)
+parser.add_argument("--fit-file", help="FIT file of ride", required=True, type=str)
 parser.add_argument("--video-file", help="Video file of ride", required=True, type=str)
 parser.add_argument(
     "--video-length-in-secs",
