@@ -276,4 +276,4 @@ class VideoRenderer(Renderer):
 
         print(f"\nRunning command: ffmpeg {' '.join(cmd.get_args())}\n\n")
 
-        cmd.run()
+        cmd.run(overwrite_output=True)

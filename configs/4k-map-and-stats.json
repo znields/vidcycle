@@ -1,5 +1,6 @@
 {
-    "numberOfThreads": 116,
+    "videoNumberOfThreads": 96,
+    "panelNumberOfThreads": 116,
     "panelWidth": 0.2,
     "stats": {
         "height": 0.7,
@@ -8,6 +9,7 @@
             0.2,
             0.7
         ],
+        "statToLabelYDistance": 0.11,
         "opacity": 0.9,
         "keysAndLabels": [
             [

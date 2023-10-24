@@ -110,15 +110,15 @@ if __name__ == "__main__":
         video_length=video_length,
         video=video,
         output_folder="panel",
-        num_threads=render_config["numberOfThreads"],
+        num_threads=render_config["panelNumberOfThreads"],
         panel_width=render_config["panelWidth"],
         map_height=render_config["map"]["height"],
         map_opacity=render_config["map"]["opacity"],
         map_marker_size=render_config["map"]["markerSize"],
-        stat_keys_and_labels=render_config["map"]["keysAndLabels"],
+        stat_keys_and_labels=render_config["stats"]["keysAndLabels"],
         stats_x_position=render_config["stats"]["xPosition"],
         stats_y_range=render_config["stats"]["yPositionRange"],
-        stat_label_y_position_delta=render_config["stats"]["yPositionRange"],
+        stat_label_y_position_delta=render_config["stats"]["statToLabelYDistance"],
         stats_opacity=render_config["stats"]["opacity"],
     ).render()
 
@@ -126,7 +126,7 @@ if __name__ == "__main__":
         video=video,
         panel_folder="panel",
         output_filepath="out.mp4",
-        num_threads=96,
+        num_threads=render_config["videolNumberOfThreads"],
         video_length=video_length,
         video_offset=video_offset,
     ).render()
