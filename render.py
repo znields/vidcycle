@@ -15,12 +15,7 @@ from matplotlib import font_manager
 
 STATS_LABEL_FONT_SIZE = 70
 STATS_FONT_SIZE = 200
-
-FONTS_DIR = "fonts"
-font_files = font_manager.findSystemFonts(fontpaths=[FONTS_DIR])
-
-for font_file in font_files:
-    font_manager.fontManager.addfont(font_file)
+STATS_FONT = font_manager.FontProperties(fname="fonts/Orbitron-Black.ttf")
 
 
 class Renderer:
@@ -175,7 +170,7 @@ class PanelRenderer(Renderer):
 
         verts = [(c.longitude, c.latitude) for c in self.segment.coordinates]
         codes = [Path.MOVETO] + [Path.CURVE3 for _ in range(len(verts) - 1)]
-        path = Path(verts, codes)
+        path = Path(verts + [verts[-1]], codes + [Path.MOVETO])
         patch = patches.PathPatch(
             path,
             edgecolor=(1, 1, 1, self.map_opacity),
@@ -193,8 +188,8 @@ class PanelRenderer(Renderer):
 
         self.map_axis.add_patch(patch)
         # TODO: move spacing to config file
-        self.map_axis.set_xlim(min_x - (dx * 0.09), max_x + (dx * 0.01))
-        self.map_axis.set_ylim(min_y - (dy * 0.01), max_y + (dy * 0.09))
+        self.map_axis.set_xlim(min_x - (dx * 0.1), max_x + (dx * 0.1))
+        self.map_axis.set_ylim(min_y - (dy * 0.1), max_y + (dy * 0.1))
 
     def plot_marker(self) -> None:
         start = self.segment.coordinates[0]
@@ -238,7 +233,7 @@ class PanelRenderer(Renderer):
                 "0" if value is None else str(int(value)),
                 color="white",
                 fontsize=STATS_FONT_SIZE,
-                fontname="Orbitron-Black",
+                fontproperties=STATS_FONT,
             )
             label_text = self.stats_axis.text(
                 self.stats_x_position,
@@ -246,7 +241,7 @@ class PanelRenderer(Renderer):
                 label,
                 color="white",
                 fontsize=STATS_LABEL_FONT_SIZE,
-                fontname="Orbitron-Black",
+                fontproperties=STATS_FONT,
             )
             stat_text.set_alpha(self.stats_opacity)
             label_text.set_alpha(self.stats_opacity)
