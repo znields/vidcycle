@@ -10,9 +10,17 @@ from multiprocessing import pool
 import os
 import shutil
 import ffmpeg
+from matplotlib import font_manager
+
 
 STATS_LABEL_FONT_SIZE = 70
 STATS_FONT_SIZE = 200
+
+FONTS_DIR = "fonts"
+font_files = font_manager.findSystemFonts(fontpaths=[FONTS_DIR])
+
+for font_file in font_files:
+    font_manager.fontManager.addfont(font_file)
 
 
 class Renderer:
@@ -184,8 +192,9 @@ class PanelRenderer(Renderer):
         dx, dy = max_x - min_x, max_y - min_y
 
         self.map_axis.add_patch(patch)
-        self.map_axis.set_xlim(min_x - (dx * 0.05), max_x + (dx * 0.01))
-        self.map_axis.set_ylim(min_y - (dy * 0.01), max_y + (dy * 0.05))
+        # TODO: move spacing to config file
+        self.map_axis.set_xlim(min_x - (dx * 0.09), max_x + (dx * 0.01))
+        self.map_axis.set_ylim(min_y - (dy * 0.01), max_y + (dy * 0.09))
 
     def plot_marker(self) -> None:
         start = self.segment.coordinates[0]
@@ -193,18 +202,19 @@ class PanelRenderer(Renderer):
             [start.longitude],
             [start.latitude],
             marker="o",
-            markersize=self.map_marker_size,
             markerfacecolor="white",
             markeredgecolor="white",
+            markersize=self.map_marker_inner_size,
+            alpha=self.map_marker_inner_opacity,
         )
         (self.outer_marker,) = self.map_axis.plot(
             [start.longitude],
             [start.latitude],
             marker="o",
-            markersize=self.map_marker_size * 2,
             markerfacecolor="white",
             markeredgecolor="white",
-            alpha=self.map_opacity,
+            markersize=self.map_marker_outer_size,
+            alpha=self.map_marker_outer_opacity,
         )
 
     def update_marker(self, coordinate: GarminCoordinate) -> None:
@@ -228,6 +238,7 @@ class PanelRenderer(Renderer):
                 "0" if value is None else str(int(value)),
                 color="white",
                 fontsize=STATS_FONT_SIZE,
+                fontname="Orbitron-Black",
             )
             label_text = self.stats_axis.text(
                 self.stats_x_position,
@@ -235,6 +246,7 @@ class PanelRenderer(Renderer):
                 label,
                 color="white",
                 fontsize=STATS_LABEL_FONT_SIZE,
+                fontname="Orbitron-Black",
             )
             stat_text.set_alpha(self.stats_opacity)
             label_text.set_alpha(self.stats_opacity)
