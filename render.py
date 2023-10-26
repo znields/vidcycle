@@ -172,7 +172,7 @@ class PanelRenderer(Renderer):
 
     def plot_marker(self) -> None:
         start = self.segment.coordinates[0]
-        (self.marker,) = self.map_axis.plot(
+        (self.inner_marker,) = self.map_axis.plot(
             [start.longitude],
             [start.latitude],
             marker="o",
@@ -180,10 +180,20 @@ class PanelRenderer(Renderer):
             markerfacecolor="white",
             markeredgecolor="white",
         )
+        (self.outer_marker,) = self.map_axis.plot(
+            [start.longitude],
+            [start.latitude],
+            marker="o",
+            markersize=self.map_marker_size * 2,
+            markerfacecolor="white",
+            markeredgecolor="white",
+            alpha=self.map_opacity,
+        )
 
     def update_marker(self, coordinate: GarminCoordinate) -> None:
-        self.marker.set_xdata([coordinate.longitude])
-        self.marker.set_ydata([coordinate.latitude])
+        for marker in [self.inner_marker, self.outer_marker]:
+            marker.set_xdata([coordinate.longitude])
+            marker.set_ydata([coordinate.latitude])
 
     def plot_stats(self) -> None:
         self.stats_axis = self.figure.add_axes([0, 0, 1, 1 - self.map_height])
