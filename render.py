@@ -30,7 +30,10 @@ class ThreadedPanelRenderer(Renderer):
         panel_width: float,
         map_height: float,
         map_opacity: float,
-        map_marker_size: int,
+        map_marker_inner_size: int,
+        map_marker_inner_opacity: float,
+        map_marker_outer_size: int,
+        map_marker_outer_opacity: float,
         stat_keys_and_labels: List[Tuple[str, str]],
         stats_x_position: float,
         stats_y_range: Tuple[float, float],
@@ -46,7 +49,10 @@ class ThreadedPanelRenderer(Renderer):
         self.panel_width = panel_width
         self.map_height = map_height
         self.map_opacity = map_opacity
-        self.map_marker_size = map_marker_size
+        self.map_marker_inner_size = map_marker_inner_size
+        self.map_marker_inner_opacity = map_marker_inner_opacity
+        self.map_marker_outer_size = map_marker_outer_size
+        self.map_marker_outer_opacity = map_marker_outer_opacity
         self.stat_keys_and_labels = stat_keys_and_labels
         self.stats_x_position = stats_x_position
         self.stats_y_range = stats_y_range
@@ -105,7 +111,10 @@ class PanelRenderer(Renderer):
         panel_width: float,
         map_height: float,
         map_opacity: float,
-        map_marker_size: int,
+        map_marker_inner_size: int,
+        map_marker_inner_opacity: float,
+        map_marker_outer_size: int,
+        map_marker_outer_opacity: float,
         stat_keys_and_labels: List[Tuple[str, str]],
         stats_x_position: float,
         stats_y_range: Tuple[float, float],
@@ -121,7 +130,10 @@ class PanelRenderer(Renderer):
         self.panel_width = panel_width
         self.map_height = map_height
         self.map_opacity = map_opacity
-        self.map_marker_size = map_marker_size
+        self.map_marker_inner_size = map_marker_inner_size
+        self.map_marker_inner_opacity = map_marker_inner_opacity
+        self.map_marker_outer_size = map_marker_outer_size
+        self.map_marker_outer_opacity = map_marker_outer_opacity
         self.stat_keys_and_labels = stat_keys_and_labels
         self.stats_x_position = stats_x_position
         self.stats_y_range = stats_y_range

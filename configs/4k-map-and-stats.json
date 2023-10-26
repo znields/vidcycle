@@ -29,6 +29,12 @@
     "map": {
         "height": 0.3,
         "opacity": 0.9,
-        "markerSize": 15
+        "markerSize": 15,
+        "marker": {
+            "innerSize": 15,
+            "outerSize": 30,
+            "innerOpacity": 1.0,
+            "outerOpacity": 0.5
+        }
     }
 }
