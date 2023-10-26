@@ -62,9 +62,14 @@ class ThreadedPanelRenderer(Renderer):
     def render(self) -> None:
         self.clean_output_folder()
         subsegments = []
+        video_segment = self.segment.get_subsegment(
+            self.segment_start_time,
+            self.segment_start_time + self.video_length,
+            timedelta(seconds=1 / self.video.get_fps()),
+        )
         for thread in range(self.num_threads):
             subsegment = self.get_subsegment_for_thread(thread)
-            subsegments.append((thread, subsegment))
+            subsegments.append((thread, video_segment, subsegment))
 
         pool.Pool(self.num_threads).map(self.render_with_single_thread, subsegments)
 
@@ -77,11 +82,11 @@ class ThreadedPanelRenderer(Renderer):
         )
 
     def render_with_single_thread(self, args):
-        thread_number, subsegment = args
+        thread_number, video_segment, subsegment = args
         renderer = PanelRenderer(
             **{
                 **self.__dict__,
-                "segment": self.segment,
+                "segment": video_segment,
                 "subsegment": subsegment,
                 "thread_number": thread_number,
             },
