@@ -52,6 +52,7 @@ args = vars(parser.parse_args())
 
 
 if __name__ == "__main__":
+    video_output_path = args["video_output_path"]
     left_search_bound = timedelta(
         seconds=args["first_move_time_gps_search_window_in_secs"][0]
     )
@@ -128,7 +129,7 @@ if __name__ == "__main__":
     VideoRenderer(
         video=video,
         panel_folder="panel",
-        output_filepath="out.mp4",
+        output_filepath=video_output_path,
         num_threads=render_config["videoNumberOfThreads"],
         video_length=video_length,
         video_offset=video_offset,

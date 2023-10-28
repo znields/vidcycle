@@ -110,7 +110,8 @@ class GarminCoordinate(Coordinate):
 
         self.distance = distance
         self.altitude = altitude
-        self.speed = speed
+        # convert from meters per second to miles per hour
+        self.speed = speed * 2.236936
         self.heart_rate = heart_rate
         self.temperature = temperature
         self.power = power
