@@ -255,7 +255,7 @@ class PanelRenderer(Renderer):
         for key, stat_and_label in self.key_to_stat_map.items():
             stat, label = stat_and_label
             value = self._make_value_text(coordinate.__dict__[key], label.get_text())
-            stat.set_text("0" if value is None else str(int(value)))
+            stat.set_text(value)
 
     def render(self) -> None:
         frame = 0
@@ -273,15 +273,13 @@ class PanelRenderer(Renderer):
     @staticmethod
     def _make_value_text(value: Any, label: str) -> str:
         if value is None:
-            value = "0"
+            value = 0.0
         elif type(value) is Speed:
             if label.lower() == "mph":
-                value = str(value.get_miles_per_hour())
+                value = value.get_miles_per_hour()
             elif label.lower() == "mps":
-                value = str(value.get_meters_per_second())
-        elif type(value) is float:
-            value = str(int(value))
-        return value
+                value = value.get_meters_per_second()
+        return str(int(value))
 
 
 class VideoRenderer(Renderer):
