@@ -394,6 +394,10 @@ class Speed:
         miles_per_hour: Optional[float] = None,
         meters_per_second: Optional[float] = None,
     ):
+        if miles_per_hour is None and meters_per_second is None:
+            miles_per_hour = 0.0
+            meters_per_second = 0.0
+
         self.miles_per_hour = miles_per_hour
         self.meters_per_second = meters_per_second
 
@@ -430,7 +434,7 @@ class Speed:
     def __mul__(self, other_speed: Any):
         if type(other_speed) == float:
             meters_per_second = self.get_meters_per_second() * other_speed
-        else:
+        elif type(other_speed) == Speed:
             meters_per_second = (
                 self.get_meters_per_second() * other_speed.get_meters_per_second()
             )
