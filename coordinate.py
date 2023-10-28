@@ -389,6 +389,9 @@ def calculate_segment_distance(
 
 
 class Speed:
+    METERS_IN_MILE = 1609.34
+    SECONDS_IN_HOUR = 60 * 60
+
     def __init__(
         self,
         miles_per_hour: Optional[float] = None,
@@ -405,11 +408,11 @@ class Speed:
         if self.miles_per_hour is not None:
             return self.miles_per_hour
         elif self.meters_per_second is not None:
-            return self.meters_per_second * 2.236936
+            return self.meters_per_second * (self.SECONDS_IN_HOUR / self.METERS_IN_MILE)
 
     def get_meters_per_second(self):
         if self.miles_per_hour is not None:
-            return self.miles_per_hour / 2.236936
+            return self.miles_per_hour / (self.SECONDS_IN_HOUR / self.METERS_IN_MILE)
         elif self.meters_per_second is not None:
             return self.meters_per_second
 
