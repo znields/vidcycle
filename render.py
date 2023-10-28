@@ -222,20 +222,13 @@ class PanelRenderer(Renderer):
         self.stats_axis.axis("off")
         num_stats = len(self.stat_keys_and_labels)
         y_positions = list(np.linspace(*self.stats_y_range, num_stats))
-        self.key_to_stat_map: Dict[str, Any] = {}
+        self.key_to_stat_map: Dict[str, Tuple[Any, Any]] = {}
         start = self.segment.coordinates[0]
         for key_and_label, y_position in zip(self.stat_keys_and_labels, y_positions):
             key, label = key_and_label
             value = start.__dict__[key]
-            if value is None:
-                value = "0"
-            elif type(value) is Speed:
-                if label.lower() == "mph":
-                    value = str(value.get_miles_per_hour())
-                elif label.lower() == "mps":
-                    value = str(value.get_meters_per_second())
-            elif type(value) is float:
-                value = str(int(value))
+
+            value = self._make_value_text(value, label)
 
             stat_text = self.stats_axis.text(
                 self.stats_x_position,
@@ -256,11 +249,12 @@ class PanelRenderer(Renderer):
             stat_text.set_alpha(self.stats_opacity)
             label_text.set_alpha(self.stats_opacity)
 
-            self.key_to_stat_map[key] = stat_text
+            self.key_to_stat_map[key] = (stat_text, label_text)
 
     def update_stats(self, coordinate: GarminCoordinate) -> None:
-        for key, stat in self.key_to_stat_map.items():
-            value = coordinate.__dict__[key]
+        for key, stat_and_label in self.key_to_stat_map.items():
+            stat, label = stat_and_label
+            value = self._make_value_text(coordinate.__dict__[key], label.get_text())
             stat.set_text("0" if value is None else str(int(value)))
 
     def render(self) -> None:
@@ -275,6 +269,18 @@ class PanelRenderer(Renderer):
                 transparent=True,
             )
             frame += 1
+
+    @staticmethod
+    def _make_value_text(value: Any, label: str) -> str:
+        if value is None:
+            value = "0"
+        elif type(value) is Speed:
+            if label.lower() == "mph":
+                value = str(value.get_miles_per_hour())
+            elif label.lower() == "mps":
+                value = str(value.get_meters_per_second())
+        elif type(value) is float:
+            value = str(int(value))
 
 
 class VideoRenderer(Renderer):
