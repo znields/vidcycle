@@ -281,6 +281,7 @@ class PanelRenderer(Renderer):
                 value = str(value.get_meters_per_second())
         elif type(value) is float:
             value = str(int(value))
+        return value
 
 
 class VideoRenderer(Renderer):

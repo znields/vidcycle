@@ -361,33 +361,6 @@ class GarminSegmentIterator(SegmentIterator):
         return super().__next__()
 
 
-def calculate_segment_distance(
-    garmin_segment: GarminSegment,
-    go_pro_segment: Segment,
-    go_pro_start_offset: timedelta,
-    gps_align_step_size: timedelta,
-) -> float:
-    total_distance = 0.0
-    num_points = 0
-
-    for go_pro_coordinate in go_pro_segment.get_iterator(gps_align_step_size):
-        garmin_coorindate = garmin_segment.get_coordinate(
-            go_pro_coordinate.timestamp + go_pro_start_offset
-        )
-        if garmin_coorindate.speed is None or garmin_coorindate.speed < 0.1:
-            continue
-
-        if garmin_coorindate is None:
-            if num_points != 0:
-                break
-            continue
-
-        total_distance += Coordinate.distance(garmin_coorindate, go_pro_coordinate)
-        num_points += 1
-
-    return total_distance / num_points if num_points != 0 else float("inf")
-
-
 class Speed:
     METERS_IN_MILE = 1609.34
     SECONDS_IN_HOUR = 60 * 60
