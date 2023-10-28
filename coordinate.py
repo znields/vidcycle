@@ -91,7 +91,7 @@ class GarminCoordinate(Coordinate):
         altitude: float,
         temperature: int,
         heart_rate: Optional[int] = None,
-        speed: Optional[float] = None,
+        speed: Optional["Speed"] = None,
         position_lat: Optional[int] = None,
         position_long: Optional[int] = None,
         power: Optional[int] = None,
@@ -110,8 +110,7 @@ class GarminCoordinate(Coordinate):
 
         self.distance = distance
         self.altitude = altitude
-        # convert from meters per second to miles per hour
-        self.speed = speed * 2.236936 if speed is not None else None
+        self.speed = speed
         self.heart_rate = heart_rate
         self.temperature = temperature
         self.power = power
@@ -302,8 +301,12 @@ class GarminSegment(Segment):
             if not start_time < a.timestamp < b.timestamp < end_time:
                 continue
 
-            if (a.speed is None or a.speed < 0.0001) and (
-                b.speed is not None and b.speed > 0.0001
+            if (
+                a.speed.get_meters_per_second() is None
+                or a.speed < Speed(meters_per_second=0.0001)
+            ) and (
+                b.speed.get_meters_per_second() is not None
+                and b.speed > Speed(meters_per_second=0.0001)
             ):
                 return b
 
@@ -319,6 +322,10 @@ class GarminSegment(Segment):
         coordinates = []
         for message in messages["record_mesgs"]:
             message = {key: message[key] for key in message if type(key) == str}
+            message = {
+                **message,
+                "speed": Speed(meters_per_second=message.get("speed", None)),
+            }
             coordinates.append(GarminCoordinate(**message))
         return GarminSegment(coordinates)
 
@@ -379,3 +386,58 @@ def calculate_segment_distance(
         num_points += 1
 
     return total_distance / num_points if num_points != 0 else float("inf")
+
+
+class Speed:
+    def __init__(
+        self,
+        miles_per_hour: Optional[float] = None,
+        meters_per_second: Optional[float] = None,
+    ):
+        self.miles_per_hour = miles_per_hour
+        self.meters_per_second = meters_per_second
+
+    def get_miles_per_hour(self):
+        if self.miles_per_hour is not None:
+            return self.miles_per_hour
+        elif self.meters_per_second is not None:
+            return self.meters_per_second * 2.236936
+
+    def get_meters_per_second(self):
+        if self.miles_per_hour is not None:
+            return self.miles_per_hour / 2.236936
+        elif self.meters_per_second is not None:
+            return self.meters_per_second
+
+    def __add__(self, other_speed: "Speed"):
+        meters_per_second = (
+            self.get_meters_per_second() + other_speed.get_meters_per_second()
+        )
+        return Speed(meters_per_second=meters_per_second)
+
+    def __sub__(self, other_speed: "Speed"):
+        meters_per_second = (
+            self.get_meters_per_second() - other_speed.get_meters_per_second()
+        )
+        return Speed(meters_per_second=meters_per_second)
+
+    def __div__(self, other_speed: "Speed"):
+        meters_per_second = (
+            self.get_meters_per_second() / other_speed.get_meters_per_second()
+        )
+        return Speed(meters_per_second=meters_per_second)
+
+    def __mul__(self, other_speed: Any):
+        if type(other_speed) == float:
+            meters_per_second = self.get_meters_per_second() * other_speed
+        else:
+            meters_per_second = (
+                self.get_meters_per_second() * other_speed.get_meters_per_second()
+            )
+        return Speed(meters_per_second=meters_per_second)
+
+    def __lt__(self, other_speed: "Speed"):
+        return self.get_meters_per_second() < other_speed.get_meters_per_second()
+
+    def __gt__(self, other_speed: "Speed"):
+        return self.get_meters_per_second() > other_speed.get_meters_per_second()
