@@ -1,5 +1,5 @@
 from datetime import timedelta, datetime
-from coordinate import GarminSegment, GarminCoordinate
+from coordinate import GarminSegment, GarminCoordinate, Speed
 import matplotlib.pyplot as plt
 import numpy as np
 import matplotlib.patches as patches
@@ -227,10 +227,20 @@ class PanelRenderer(Renderer):
         for key_and_label, y_position in zip(self.stat_keys_and_labels, y_positions):
             key, label = key_and_label
             value = start.__dict__[key]
+            if value is None:
+                value = "0"
+            elif type(value) is Speed:
+                if label.lower() == "mph":
+                    value = str(value.get_miles_per_hour())
+                elif label.lower() == "mps":
+                    value = str(value.get_meters_per_second())
+            elif type(value) is float:
+                value = str(int(value))
+
             stat_text = self.stats_axis.text(
                 self.stats_x_position,
                 y_position,
-                "0" if value is None else str(int(value)),
+                value,
                 color="white",
                 fontsize=STATS_FONT_SIZE,
                 fontproperties=STATS_FONT,
