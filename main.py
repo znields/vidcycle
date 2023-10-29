@@ -1,30 +1,16 @@
 import argparse
-import go_pro
-from coordinate import (
-    GarminSegment,
-    GarminCoordinate,
-)
+from coordinate import GarminSegment
 from datetime import timedelta
-import render
+from render import ThreadedPanelRenderer, VideoRenderer
+from video import GoProVideo
+import time
+import json
 
 parser = argparse.ArgumentParser(
     description="Program to add metadata to cycling video from GoPro"
 )
-parser.add_argument("--fit-file", help="GPX file of ride", required=True, type=str)
+parser.add_argument("--fit-file", help="FIT file of ride", required=True, type=str)
 parser.add_argument("--video-file", help="Video file of ride", required=True, type=str)
-parser.add_argument(
-    "--optimized-video-resolution",
-    help="Video resolution of optimized video",
-    type=int,
-    default=None,
-)
-parser.add_argument(
-    "--video-stats-refresh-rate-in-secs",
-    help="How often the video stats refresh in seconds",
-    default=0.5,
-    type=float,
-    required=True,
-)
 parser.add_argument(
     "--video-length-in-secs",
     help="How many seconds the video should last",
@@ -40,8 +26,8 @@ parser.add_argument(
 parser.add_argument(
     "--video-output-path",
     help="Video output path. If none then will preview video.",
-    default=None,
     type=str,
+    required=True,
 )
 parser.add_argument(
     "--first-move-time-in-secs",
@@ -56,10 +42,17 @@ parser.add_argument(
     type=float,
     nargs=2,
 )
+parser.add_argument(
+    "--render-config-file",
+    help="Render config file to determine video render style",
+    required=True,
+    type=str,
+)
 args = vars(parser.parse_args())
 
 
 if __name__ == "__main__":
+    video_output_path = args["video_output_path"]
     left_search_bound = timedelta(
         seconds=args["first_move_time_gps_search_window_in_secs"][0]
     )
@@ -67,36 +60,27 @@ if __name__ == "__main__":
         seconds=args["first_move_time_gps_search_window_in_secs"][1]
     )
     first_move_time = timedelta(seconds=args["first_move_time_in_secs"])
+    video_offset = timedelta(seconds=args["video_offset_start_in_secs"])
+
+    video = GoProVideo(args["video_file"])
 
     video_length = (
         timedelta(seconds=args["video_length_in_secs"])
         if args["video_length_in_secs"] is not None
-        else None
-    )
-    video_offset = timedelta(seconds=args["video_offset_start_in_secs"])
-    video_stats_refresh_rate = timedelta(
-        seconds=args["video_stats_refresh_rate_in_secs"]
+        else video.get_duration()
     )
 
-    go_pro_start_time, _ = go_pro.get_start_and_end_time(args["video_file"])
-    if args["optimized_video_resolution"] is not None:
-        optimized_video_file_path = render.write_optimized_video(
-            args["video_file"], args["optimized_video_resolution"]
-        )
-    else:
-        optimized_video_file_path = args["video_file"]
+    render_config_file = open(args["render_config_file"])
+    render_config = json.loads(render_config_file.read())
 
-    garmin_coordinates = GarminCoordinate.load_coordinates_from_fit_file(
-        args["fit_file"]
-    )
-    garmin_segment = GarminSegment(garmin_coordinates)
+    garmin_segment = GarminSegment.load_from_fit_file(args["fit_file"])
 
     left_search, right_search = (
-        go_pro_start_time + first_move_time + left_search_bound,
-        go_pro_start_time + first_move_time + right_search_bound,
+        video.get_start_time() + first_move_time + left_search_bound,
+        video.get_start_time() + first_move_time + right_search_bound,
     )
     print(
-        f"\n\nSearching for first Garmin move time between {left_search} and {right_search}."
+        f"Searching for first Garmin move time between {left_search} and {right_search}."
     )
     garmin_first_move_coordinate = garmin_segment.get_first_move_coordinate(
         left_search, right_search
@@ -113,20 +97,42 @@ if __name__ == "__main__":
         )
 
     garmin_first_move_time = garmin_first_move_coordinate.timestamp
-    go_pro_first_move_time = go_pro_start_time + first_move_time
+    go_pro_first_move_time = video.get_start_time() + first_move_time
 
     garmin_time_shift = garmin_first_move_time - go_pro_first_move_time
 
-    garmin_start_time = go_pro_start_time + video_offset + garmin_time_shift
+    garmin_start_time = video.get_start_time() + video_offset + garmin_time_shift
 
-    render.write_video(
-        args["video_file"],
-        optimized_video_file_path,
-        args["video_output_path"],
-        args["optimized_video_resolution"],
-        garmin_segment,
-        garmin_start_time,
-        video_length,
-        video_offset,
-        video_stats_refresh_rate,
-    )
+    render_start_time = time.time()
+
+    ThreadedPanelRenderer(
+        segment=garmin_segment,
+        segment_start_time=garmin_start_time,
+        video_length=video_length,
+        video=video,
+        output_folder="panel",
+        num_threads=render_config["panelNumberOfThreads"],
+        panel_width=render_config["panelWidth"],
+        map_height=render_config["map"]["height"],
+        map_opacity=render_config["map"]["opacity"],
+        map_marker_inner_size=render_config["map"]["marker"]["innerSize"],
+        map_marker_inner_opacity=render_config["map"]["marker"]["innerOpacity"],
+        map_marker_outer_size=render_config["map"]["marker"]["outerSize"],
+        map_marker_outer_opacity=render_config["map"]["marker"]["outerOpacity"],
+        stat_keys_and_labels=render_config["stats"]["keysAndLabels"],
+        stats_x_position=render_config["stats"]["xPosition"],
+        stats_y_range=render_config["stats"]["yPositionRange"],
+        stat_label_y_position_delta=render_config["stats"]["statToLabelYDistance"],
+        stats_opacity=render_config["stats"]["opacity"],
+    ).render()
+
+    VideoRenderer(
+        video=video,
+        panel_folder="panel",
+        output_filepath=video_output_path,
+        num_threads=render_config["videoNumberOfThreads"],
+        video_length=video_length,
+        video_offset=video_offset,
+    ).render()
+
+    print(f"\nTotal render time: {time.time() - render_start_time} seconds.")

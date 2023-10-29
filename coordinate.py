@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta, timezone
 import json
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Tuple
 import geopy.distance
 import functools
 from garmin_fit_sdk import Decoder, Stream
@@ -91,7 +91,7 @@ class GarminCoordinate(Coordinate):
         altitude: float,
         temperature: int,
         heart_rate: Optional[int] = None,
-        speed: Optional[float] = None,
+        speed: Optional["Speed"] = None,
         position_lat: Optional[int] = None,
         position_long: Optional[int] = None,
         power: Optional[int] = None,
@@ -164,19 +164,6 @@ class GarminCoordinate(Coordinate):
 
         return garmin_coordinate
 
-    @staticmethod
-    def load_coordinates_from_fit_file(path: str) -> List["GarminCoordinate"]:
-        stream = Stream.from_file(path)
-
-        decoder = Decoder(stream)
-        messages, _ = decoder.read()
-
-        coordinates = []
-        for message in messages["record_mesgs"]:
-            message = {key: message[key] for key in message if type(key) == str}
-            coordinates.append(GarminCoordinate(**message))
-        return coordinates
-
 
 class Segment:
     def __init__(self, coordinates: List[Coordinate]) -> None:
@@ -198,6 +185,7 @@ class Segment:
                 reversed_coordinates.append(coordinate)
         return reversed_coordinates[::-1]
 
+    # TODO: optimize using binary search
     @functools.lru_cache(maxsize=None)
     def get_coordinate(self, time: datetime) -> Optional[Coordinate]:
         result = None
@@ -208,6 +196,8 @@ class Segment:
                 b_timestamp = b.timestamp.timestamp()
 
                 time_delta = b_timestamp - a_timestamp
+                # why care if there is a gap > 1.5 secs?
+                # because this indicates gps stopped recording
                 if time_delta < 0.0001 or time_delta > 1.5:
                     result = copy(a)
                     break
@@ -265,6 +255,9 @@ class Segment:
 
         csvfile.close()
 
+    def get_xy_pair(self) -> Tuple[float, float]:
+        return 0.0, 0.0
+
 
 class GarminSegment(Segment):
     def get_coordinate(self, time: datetime) -> Optional[GarminCoordinate]:
@@ -308,12 +301,33 @@ class GarminSegment(Segment):
             if not start_time < a.timestamp < b.timestamp < end_time:
                 continue
 
-            if (a.speed is None or a.speed < 0.0001) and (
-                b.speed is not None and b.speed > 0.0001
+            if (
+                a.speed.get_meters_per_second() is None
+                or a.speed < Speed(meters_per_second=0.0001)
+            ) and (
+                b.speed.get_meters_per_second() is not None
+                and b.speed > Speed(meters_per_second=0.0001)
             ):
                 return b
 
         return None
+
+    @staticmethod
+    def load_from_fit_file(path: str) -> "GarminSegment":
+        stream = Stream.from_file(path)
+
+        decoder = Decoder(stream)
+        messages, _ = decoder.read()
+
+        coordinates = []
+        for message in messages["record_mesgs"]:
+            message = {key: message[key] for key in message if type(key) == str}
+            message = {
+                **message,
+                "speed": Speed(meters_per_second=message.get("speed", None)),
+            }
+            coordinates.append(GarminCoordinate(**message))
+        return GarminSegment(coordinates)
 
 
 class SegmentIterator:
@@ -347,28 +361,63 @@ class GarminSegmentIterator(SegmentIterator):
         return super().__next__()
 
 
-def calculate_segment_distance(
-    garmin_segment: GarminSegment,
-    go_pro_segment: Segment,
-    go_pro_start_offset: timedelta,
-    gps_align_step_size: timedelta,
-) -> float:
-    total_distance = 0.0
-    num_points = 0
+class Speed:
+    METERS_IN_MILE = 1609.34
+    SECONDS_IN_HOUR = 60 * 60
 
-    for go_pro_coordinate in go_pro_segment.get_iterator(gps_align_step_size):
-        garmin_coorindate = garmin_segment.get_coordinate(
-            go_pro_coordinate.timestamp + go_pro_start_offset
+    def __init__(
+        self,
+        miles_per_hour: Optional[float] = None,
+        meters_per_second: Optional[float] = None,
+    ):
+        if miles_per_hour is None and meters_per_second is None:
+            miles_per_hour = 0.0
+            meters_per_second = 0.0
+
+        self.miles_per_hour = miles_per_hour
+        self.meters_per_second = meters_per_second
+
+    def get_miles_per_hour(self):
+        if self.miles_per_hour is not None:
+            return self.miles_per_hour
+        elif self.meters_per_second is not None:
+            return self.meters_per_second * (self.SECONDS_IN_HOUR / self.METERS_IN_MILE)
+
+    def get_meters_per_second(self):
+        if self.miles_per_hour is not None:
+            return self.miles_per_hour / (self.SECONDS_IN_HOUR / self.METERS_IN_MILE)
+        elif self.meters_per_second is not None:
+            return self.meters_per_second
+
+    def __add__(self, other_speed: "Speed"):
+        meters_per_second = (
+            self.get_meters_per_second() + other_speed.get_meters_per_second()
         )
-        if garmin_coorindate.speed is None or garmin_coorindate.speed < 0.1:
-            continue
+        return Speed(meters_per_second=meters_per_second)
 
-        if garmin_coorindate is None:
-            if num_points != 0:
-                break
-            continue
+    def __sub__(self, other_speed: "Speed"):
+        meters_per_second = (
+            self.get_meters_per_second() - other_speed.get_meters_per_second()
+        )
+        return Speed(meters_per_second=meters_per_second)
 
-        total_distance += Coordinate.distance(garmin_coorindate, go_pro_coordinate)
-        num_points += 1
+    def __div__(self, other_speed: "Speed"):
+        meters_per_second = (
+            self.get_meters_per_second() / other_speed.get_meters_per_second()
+        )
+        return Speed(meters_per_second=meters_per_second)
 
-    return total_distance / num_points if num_points != 0 else float("inf")
+    def __mul__(self, other_speed: Any):
+        if type(other_speed) == float:
+            meters_per_second = self.get_meters_per_second() * other_speed
+        elif type(other_speed) == Speed:
+            meters_per_second = (
+                self.get_meters_per_second() * other_speed.get_meters_per_second()
+            )
+        return Speed(meters_per_second=meters_per_second)
+
+    def __lt__(self, other_speed: "Speed"):
+        return self.get_meters_per_second() < other_speed.get_meters_per_second()
+
+    def __gt__(self, other_speed: "Speed"):
+        return self.get_meters_per_second() > other_speed.get_meters_per_second()
