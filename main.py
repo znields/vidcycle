@@ -30,14 +30,14 @@ parser.add_argument(
     required=True,
 )
 parser.add_argument(
-    "--first-move-time-in-secs",
-    help="First move time in video in seconds.",
+    "--video-lap-time-in-secs",
+    help="Lap time in seconds from the video.",
     required=True,
     type=float,
 )
 parser.add_argument(
-    "--first-move-time-gps-search-window-in-secs",
-    help="First move time range of search window.",
+    "--lap-time-search-window-in-secs",
+    help="Search window for lap time.",
     required=True,
     type=float,
     nargs=2,
