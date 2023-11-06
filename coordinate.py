@@ -263,9 +263,12 @@ class GarminSegment(Segment):
     def get_coordinate(self, time: datetime) -> Optional[GarminCoordinate]:
         return super().get_coordinate(time)
 
-    def __init__(self, coordinates: List[GarminCoordinate]) -> None:
+    def __init__(
+        self, coordinates: List[GarminCoordinate], laps: List["GarminLap"] = []
+    ) -> None:
         super().__init__(coordinates)
         self.coordinates: List[GarminCoordinate] = self.coordinates
+        self.laps = laps
 
     def write_to_csv(self, file_path):
         with open(file_path, "w") as csvfile:
@@ -327,7 +330,11 @@ class GarminSegment(Segment):
                 "speed": Speed(meters_per_second=message.get("speed", None)),
             }
             coordinates.append(GarminCoordinate(**message))
-        return GarminSegment(coordinates)
+
+        laps = []
+        for message in messages["lap_mesgs"]:
+            laps.append(GarminLap(**message))
+        return GarminSegment(coordinates, laps=laps)
 
 
 class SegmentIterator:
@@ -359,6 +366,12 @@ class GarminSegmentIterator(SegmentIterator):
 
     def __next__(self) -> GarminCoordinate:
         return super().__next__()
+
+
+class GarminLap:
+    def __init__(self, timestamp: datetime, lap_trigger: str, **_kwargs):
+        self.timestamp = timestamp
+        self.lap_trigger = lap_trigger
 
 
 class Speed:
