@@ -53,13 +53,9 @@ args = vars(parser.parse_args())
 
 if __name__ == "__main__":
     video_output_path = args["video_output_path"]
-    left_search_bound = timedelta(
-        seconds=args["first_move_time_gps_search_window_in_secs"][0]
-    )
-    right_search_bound = timedelta(
-        seconds=args["first_move_time_gps_search_window_in_secs"][1]
-    )
-    first_move_time = timedelta(seconds=args["first_move_time_in_secs"])
+    left_search_bound = timedelta(seconds=args["lap_time_search_window_in_secs"][0])
+    right_search_bound = timedelta(seconds=args["lap_time_search_window_in_secs"][1])
+    lap_time = timedelta(seconds=args["video_lap_time_in_secs"])
     video_offset = timedelta(seconds=args["video_offset_start_in_secs"])
 
     video = GoProVideo(args["video_file"])
@@ -75,33 +71,43 @@ if __name__ == "__main__":
 
     garmin_segment = GarminSegment.load_from_fit_file(args["fit_file"])
 
+    print(f"Video start:   {str(video.get_start_time())}")
+    print(f"Video end:     {str(video.get_end_time())}")
+    print(f"Garmin start:  {str(garmin_segment.get_start_time())}")
+    print(f"Garmin start:  {str(garmin_segment.get_end_time())}\n")
+
     left_search, right_search = (
-        video.get_start_time() + first_move_time + left_search_bound,
-        video.get_start_time() + first_move_time + right_search_bound,
+        video.get_start_time() + lap_time + left_search_bound,
+        video.get_start_time() + lap_time + right_search_bound,
     )
+
     print(
-        f"Searching for first Garmin move time between {left_search} and {right_search}."
+        f"Searching for Garmin lap time between {left_search} and {right_search}."
     )
-    garmin_first_move_coordinate = garmin_segment.get_first_move_coordinate(
+    garmin_lap_coordinate = garmin_segment.get_first_lap_coordinate(
         left_search, right_search
     )
 
-    if garmin_first_move_coordinate is None:
+    if garmin_lap_coordinate is None:
         print(
-            "Could not find first move coordinate. There must be one to align video. Exiting."
+            "Could not find lap coordinate. There must be one to align video. Exiting."
+        )
+        print("Available lap timestamps:\n\n")
+        print(
+            "\n".join([str(lap.timestamp) for lap in garmin_segment.get_manual_laps()])
         )
         exit()
     else:
-        print(
-            f"Found first Garmin move time at {garmin_first_move_coordinate.timestamp}."
-        )
+        print(f"Found Garmin lap time at {garmin_lap_coordinate.timestamp}.\n")
 
-    garmin_first_move_time = garmin_first_move_coordinate.timestamp
-    go_pro_first_move_time = video.get_start_time() + first_move_time
+    garmin_lap_time = garmin_lap_coordinate.timestamp
+    go_pro_lap_time = video.get_start_time() + lap_time
 
-    garmin_time_shift = garmin_first_move_time - go_pro_first_move_time
+    garmin_time_shift = garmin_lap_time - go_pro_lap_time
 
     garmin_start_time = video.get_start_time() + video_offset + garmin_time_shift
+    print(f"Garmin time shift: {garmin_time_shift}")
+    print(f"Garmin start time: {garmin_start_time}")
 
     render_start_time = time.time()
 

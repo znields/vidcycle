@@ -315,6 +315,25 @@ class GarminSegment(Segment):
 
         return None
 
+    def get_first_lap_coordinate(
+        self, start_time: datetime, end_time: datetime
+    ) -> Optional[GarminCoordinate]:
+        for coordinate in self.coordinates:
+            if not start_time < coordinate.timestamp < end_time:
+                continue
+
+            for lap in self.laps:
+                if (
+                    lap.lap_trigger == "manual"
+                    and start_time < lap.timestamp < end_time
+                ):
+                    return coordinate
+
+        return None
+
+    def get_manual_laps(self) -> List["GarminLap"]:
+        return [lap for lap in self.laps if lap.lap_trigger == "manual"]
+
     @staticmethod
     def load_from_fit_file(path: str) -> "GarminSegment":
         stream = Stream.from_file(path)
@@ -333,6 +352,7 @@ class GarminSegment(Segment):
 
         laps = []
         for message in messages["lap_mesgs"]:
+            message = {key: message[key] for key in message if type(key) == str}
             laps.append(GarminLap(**message))
         return GarminSegment(coordinates, laps=laps)
 
