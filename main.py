@@ -81,20 +81,17 @@ if __name__ == "__main__":
         video.get_start_time() + lap_time + right_search_bound,
     )
 
+    print("Available lap timestamps:\n")
     print(
-        f"Searching for Garmin lap time between {left_search} and {right_search}."
+        "\n".join([str(lap.timestamp) for lap in garmin_segment.get_manual_laps()])
+        + "\n"
     )
-    garmin_lap = garmin_segment.get_first_lap(
-        left_search, right_search
-    )
+    print(f"Searching for Garmin lap time between {left_search} and {right_search}.")
+    garmin_lap = garmin_segment.get_first_lap(left_search, right_search)
 
     if garmin_lap is None:
         print(
             "Could not find lap coordinate. There must be one to align video. Exiting."
-        )
-        print("Available lap timestamps:\n\n")
-        print(
-            "\n".join([str(lap.timestamp) for lap in garmin_segment.get_manual_laps()])
         )
         exit()
     else:
@@ -107,7 +104,9 @@ if __name__ == "__main__":
 
     garmin_start_time = video.get_start_time() + video_offset + garmin_time_shift
     print(f"Garmin time shift: {garmin_time_shift}")
-    print(f"Garmin start time: {garmin_start_time}")
+    print(f"Garmin start time: {garmin_start_time}\n")
+
+    print("Rendering side panels...")
 
     render_start_time = time.time()
 
@@ -131,6 +130,8 @@ if __name__ == "__main__":
         stat_label_y_position_delta=render_config["stats"]["statToLabelYDistance"],
         stats_opacity=render_config["stats"]["opacity"],
     ).render()
+
+    print("Rendering video...")
 
     VideoRenderer(
         video=video,
