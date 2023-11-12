@@ -74,7 +74,7 @@ if __name__ == "__main__":
     print(f"Video start:   {str(video.get_start_time())}")
     print(f"Video end:     {str(video.get_end_time())}")
     print(f"Garmin start:  {str(garmin_segment.get_start_time())}")
-    print(f"Garmin start:  {str(garmin_segment.get_end_time())}\n")
+    print(f"Garmin end:    {str(garmin_segment.get_end_time())}\n")
 
     left_search, right_search = (
         video.get_start_time() + lap_time + left_search_bound,
