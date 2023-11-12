@@ -84,11 +84,11 @@ if __name__ == "__main__":
     print(
         f"Searching for Garmin lap time between {left_search} and {right_search}."
     )
-    garmin_lap_coordinate = garmin_segment.get_first_lap_coordinate(
+    garmin_lap = garmin_segment.get_first_lap(
         left_search, right_search
     )
 
-    if garmin_lap_coordinate is None:
+    if garmin_lap is None:
         print(
             "Could not find lap coordinate. There must be one to align video. Exiting."
         )
@@ -98,9 +98,9 @@ if __name__ == "__main__":
         )
         exit()
     else:
-        print(f"Found Garmin lap time at {garmin_lap_coordinate.timestamp}.\n")
+        print(f"Found Garmin lap time at {garmin_lap.timestamp}.\n")
 
-    garmin_lap_time = garmin_lap_coordinate.timestamp
+    garmin_lap_time = garmin_lap.timestamp
     go_pro_lap_time = video.get_start_time() + lap_time
 
     garmin_time_shift = garmin_lap_time - go_pro_lap_time

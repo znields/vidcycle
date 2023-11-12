@@ -297,37 +297,15 @@ class GarminSegment(Segment):
         )
         return GarminSegment(new_coordinates)
 
-    def get_first_move_coordinate(
+    def get_first_lap(
         self, start_time: datetime, end_time: datetime
-    ) -> Optional[GarminCoordinate]:
-        for a, b in zip(self.coordinates[:-1], self.coordinates[1:]):
-            if not start_time < a.timestamp < b.timestamp < end_time:
-                continue
-
+    ) -> Optional["GarminLap"]:
+        for lap in self.laps:
             if (
-                a.speed.get_meters_per_second() is None
-                or a.speed < Speed(meters_per_second=0.0001)
-            ) and (
-                b.speed.get_meters_per_second() is not None
-                and b.speed > Speed(meters_per_second=0.0001)
+                lap.lap_trigger == "manual"
+                and start_time < lap.timestamp < end_time
             ):
-                return b
-
-        return None
-
-    def get_first_lap_coordinate(
-        self, start_time: datetime, end_time: datetime
-    ) -> Optional[GarminCoordinate]:
-        for coordinate in self.coordinates:
-            if not start_time < coordinate.timestamp < end_time:
-                continue
-
-            for lap in self.laps:
-                if (
-                    lap.lap_trigger == "manual"
-                    and start_time < lap.timestamp < end_time
-                ):
-                    return coordinate
+                return lap
 
         return None
 
