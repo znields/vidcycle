@@ -227,7 +227,7 @@ class Segment:
         self, start_time: datetime, end_time: datetime, step_length: timedelta
     ) -> List[Coordinate]:
         new_coordinates = []
-        while start_time < end_time:
+        while start_time <= end_time:
             new_coordinates.append(self.get_coordinate(start_time))
             start_time += step_length
         return new_coordinates

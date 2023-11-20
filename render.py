@@ -85,7 +85,9 @@ class ThreadedPanelRenderer(Renderer):
     def get_subsegment_for_thread(self, thread: int) -> GarminSegment:
         subsegment_length = self.video_length / self.num_threads
         start_time = self.segment_start_time + (subsegment_length * thread)
-        end_time = start_time + subsegment_length
+        end_time = (
+            start_time + subsegment_length - timedelta(seconds=1 / self.video.get_fps())
+        )
         return self.segment.get_subsegment(
             start_time, end_time, timedelta(seconds=1 / self.video.get_fps())
         )
