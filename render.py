@@ -300,27 +300,41 @@ class VideoRenderer(Renderer):
         self.num_threads = num_threads
 
     def render(self) -> None:
-        video_input = ffmpeg.input(
-            self.video.video_path,
-            ss=str(self.video_offset),
-            to=str(self.video_length + self.video_offset),
+        video_inputs = []
+        audio_inputs = []
+        for video_path in self.video.video_paths:
+            input = ffmpeg.input(
+                video_path,
+            )
+            video_inputs.append(input.video)
+            audio_inputs.append(input.audio)
+
+        start = self.video_offset.total_seconds()
+        end = (self.video_length + self.video_offset).total_seconds()
+
+        video_input = ffmpeg.concat(*video_inputs).trim(
+            start=start,
+            end=end,
         )
+        audio_input = ffmpeg.concat(*audio_inputs, v=0, a=1).filter(
+            "atrim", start=start, end=end
+        )
+
         panel_overlay = ffmpeg.input(
             f"{self.panel_folder}/*.png",
             pattern_type="glob",
             framerate=self.video.get_fps(),
         )
 
-        video = video_input.video.overlay(panel_overlay)
-        audio = video_input.audio
+        video_input = video_input.overlay(panel_overlay)
+        audio_input = audio_input
 
         cmd = ffmpeg.output(
-            video,
-            audio,
+            video_input,
+            audio_input,
             self.output_filepath,
             threads=self.num_threads,
             preset="ultrafast",
-            acodec="copy",
         )
 
         print(f"\nRunning command: ffmpeg {' '.join(cmd.get_args())}\n\n")

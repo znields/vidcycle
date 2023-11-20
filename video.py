@@ -1,16 +1,17 @@
 import subprocess
 from datetime import datetime, timezone, timedelta
-from typing import Tuple, Dict, Any
+from typing import Tuple, Dict, Any, List
 import ffmpeg
 import functools
 
 
 class Video:
-    def __init__(self, video_path: str):
-        self.video_path = video_path
+    def __init__(self, video_paths: List[str]):
+        self.video_paths = video_paths
 
+    @staticmethod
     @functools.cache
-    def get_duration(self) -> timedelta:
+    def _get_duration(video_path: str) -> timedelta:
         result = subprocess.run(
             [
                 "ffprobe",
@@ -20,7 +21,7 @@ class Video:
                 "format=duration",
                 "-of",
                 "default=noprint_wrappers=1:nokey=1",
-                self.video_path,
+                video_path,
             ],
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
@@ -28,8 +29,16 @@ class Video:
         return timedelta(seconds=float(result.stdout))
 
     @functools.cache
-    def get_resolution(self) -> Tuple[int, int]:
-        probe = ffmpeg.probe(self.video_path)
+    def get_duration(self) -> timedelta:
+        total_seconds = timedelta(seconds=0.0)
+        for video_path in self.video_paths:
+            total_seconds += self._get_duration(video_path)
+        return total_seconds
+
+    @staticmethod
+    @functools.cache
+    def _get_resolution(video_path) -> Tuple[int, int]:
+        probe = ffmpeg.probe(video_path)
         video_streams = [
             stream for stream in probe["streams"] if stream["codec_type"] == "video"
         ]
@@ -37,7 +46,21 @@ class Video:
         return video_stream["width"], video_stream["height"]
 
     @functools.cache
-    def get_fps(self):
+    def get_resolution(self):
+        resolutions = set(
+            self._get_resolution(video_path) for video_path in self.video_paths
+        )
+        assert len(resolutions) == 1
+        return next(resolution for resolution in resolutions)
+
+    def get_fps(self) -> float:
+        fpss = set(self._get_fps(video_path) for video_path in self.video_paths)
+        assert len(fpss) == 1
+        return next(fps for fps in fpss)
+
+    @staticmethod
+    @functools.cache
+    def _get_fps(video_path: str) -> float:
         rate = str(
             subprocess.run(
                 [
@@ -50,7 +73,7 @@ class Video:
                     "0",
                     "-show_entries",
                     "stream=r_frame_rate",
-                    self.video_path,
+                    video_path,
                 ],
                 capture_output=True,
             ).stdout
@@ -62,10 +85,11 @@ class Video:
 
 
 class GoProVideo(Video):
+    @staticmethod
     @functools.cache
-    def load_exif_data(self) -> Dict[str, Any]:
+    def load_exif_data(video_path: str) -> Dict[str, Any]:
         output = subprocess.run(
-            ["exiftool", "-api", "largefilesupport=1", self.video_path],
+            ["exiftool", "-api", "largefilesupport=1", video_path],
             capture_output=True,
         )
         out = output.stdout
@@ -75,7 +99,7 @@ class GoProVideo(Video):
 
     @functools.cache
     def get_start_time(self) -> datetime:
-        exif_data = self.load_exif_data()
+        exif_data = self.load_exif_data(self.video_paths[0])
         video_start_time = datetime.strptime(
             exif_data["Track Create Date"], "%Y:%m:%d %H:%M:%S"
         ).replace(tzinfo=timezone.utc)
@@ -87,10 +111,13 @@ class GoProVideo(Video):
 
     @functools.cache
     def get_duration_from_exif(self) -> timedelta:
-        exif_data = self.load_exif_data()
-        track_duration = datetime.strptime(exif_data["Track Duration"], "%H:%M:%S")
-        return timedelta(
-            hours=track_duration.hour,
-            minutes=track_duration.minute,
-            seconds=track_duration.second,
-        )
+        total_time = timedelta(seconds=0.0)
+        for video_path in self.video_paths:
+            exif_data = self.load_exif_data(video_path)
+            track_duration = datetime.strptime(exif_data["Track Duration"], "%H:%M:%S")
+            total_time += timedelta(
+                hours=track_duration.hour,
+                minutes=track_duration.minute,
+                seconds=track_duration.second,
+            )
+        return total_time

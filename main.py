@@ -10,7 +10,13 @@ parser = argparse.ArgumentParser(
     description="Program to add metadata to cycling video from GoPro"
 )
 parser.add_argument("--fit-file", help="FIT file of ride", required=True, type=str)
-parser.add_argument("--video-file", help="Video file of ride", required=True, type=str)
+parser.add_argument(
+    "--video-files",
+    help="Video files of ride",
+    required=True,
+    type=str,
+    nargs="*",
+)
 parser.add_argument(
     "--video-length-in-secs",
     help="How many seconds the video should last",
@@ -58,7 +64,7 @@ if __name__ == "__main__":
     lap_time = timedelta(seconds=args["video_lap_time_in_secs"])
     video_offset = timedelta(seconds=args["video_offset_start_in_secs"])
 
-    video = GoProVideo(args["video_file"])
+    video = GoProVideo(args["video_files"])
 
     video_length = (
         timedelta(seconds=args["video_length_in_secs"])
