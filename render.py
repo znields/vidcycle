@@ -255,9 +255,7 @@ class PanelRenderer(Renderer):
 
     def render(self) -> None:
         frame = 0
-        for coordinate in self.subsegment.get_iterator(
-            timedelta(seconds=(1 / self.video.get_fps()))
-        ):
+        for coordinate in self.subsegment.coordinates:
             self.update_marker(coordinate)
             self.update_stats(coordinate)
             self.figure.savefig(
