@@ -77,21 +77,14 @@ class ThreadedPanelRenderer(Renderer):
             timedelta(seconds=1 / self.video.get_fps()),
         )
 
-        for thread in range(self.num_threads):
-            subsegment = self.get_subsegment_for_thread(thread)
-            subsegments.append((thread, self.video_segment, subsegment))
+        for thread, subsegment_coordinates in enumerate(
+            np.array_split(self.video_segment.coordinates, self.num_threads)
+        ):
+            subsegments.append(
+                (thread, self.video_segment, GarminSegment(subsegment_coordinates))
+            )
 
         pool.Pool(self.num_threads).map(self.render_with_single_thread, subsegments)
-
-    def get_subsegment_for_thread(self, thread: int) -> GarminSegment:
-        coordinates = self.video_segment.coordinates
-        num_coordinates = len(coordinates)
-        coordinates_per_thread = num_coordinates / self.num_threads
-        start_coordinate_idx = round(coordinates_per_thread * thread)
-        end_coordinate_idx = round(start_coordinate_idx + coordinates_per_thread)
-        return GarminSegment(
-            coordinates[start_coordinate_idx:end_coordinate_idx]
-        )
 
     def render_with_single_thread(self, args):
         thread_number, video_segment, subsegment = args
