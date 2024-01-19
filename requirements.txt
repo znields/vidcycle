@@ -1,6 +1,11 @@
 contourpy==1.1.1
 cycler==0.12.1
+ffmpeg==1.4
 fonttools==4.43.1
+garmin-fit-sdk==21.126.0
+geographiclib==2.0
+geopy==2.4.1
+gpxpy==1.6.2
 importlib-resources==6.1.0
 kiwisolver==1.4.5
 matplotlib==3.8.0
