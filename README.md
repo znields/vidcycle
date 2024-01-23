@@ -2,8 +2,6 @@
 
 ## Installation
 
-
-Tools
 ```
 $ brew install ffmpeg
 $ brew install python3
