@@ -2,8 +2,8 @@
 
 ## Installation
 
-1. Clone the `vidcycle` repo.
-2. Install `ffmpeg` and `python3` applications.
+1. Install `ffmpeg` and `python3` tools.
+2. Clone the `vidcycle` repo.
 3. Install the required Python packages by running `pip install -r requirements.txt`.
 4. You're good to go!
 
