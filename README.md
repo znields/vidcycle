@@ -9,32 +9,13 @@
 
 ### Usage
 
-To begin rendering your first video, you will work with the `main.py` file. See below for this scripts documentation:
+1. Begin recording a video on your camera of choice and make sure that the time on your camera is correctly set.
+2. While the video is recording press the lap button on your Garmin bike computer.
+3. Ensure that your camera microphone can hear the beep noise that plays from the Garmin computer.
+4. Finish your recording and bike ride and load the video files and the Garmin FIT file on to your computer.
+5. Run `$ python3 main.py` specifying the parameters so that the program can align your video with the lap time that you marked on the Garmin computer.
+6. Wait for the program to finish running and enjoy your video.
 
-```
-% python3 main.py --help 
-usage: main.py [-h] --fit-file FIT_FILE --video-files [VIDEO_FILES ...] [--video-length-in-secs VIDEO_LENGTH_IN_SECS]
-               [--video-offset-start-in-secs VIDEO_OFFSET_START_IN_SECS] --video-output-path VIDEO_OUTPUT_PATH --video-lap-time-in-secs
-               VIDEO_LAP_TIME_IN_SECS --lap-time-search-window-in-secs LAP_TIME_SEARCH_WINDOW_IN_SECS LAP_TIME_SEARCH_WINDOW_IN_SECS
-               --render-config-file RENDER_CONFIG_FILE
+### Example Vidoe
 
-Program to add metadata to cycling video from GoPro
-
-optional arguments:
-  -h, --help            show this help message and exit
-  --fit-file FIT_FILE   FIT file of ride
-  --video-files [VIDEO_FILES ...]
-                        Video files of ride
-  --video-length-in-secs VIDEO_LENGTH_IN_SECS
-                        How many seconds the video should last
-  --video-offset-start-in-secs VIDEO_OFFSET_START_IN_SECS
-                        How many seconds into the video should the output start
-  --video-output-path VIDEO_OUTPUT_PATH
-                        Video output path. If none then will preview video.
-  --video-lap-time-in-secs VIDEO_LAP_TIME_IN_SECS
-                        Lap time in seconds from the video.
-  --lap-time-search-window-in-secs LAP_TIME_SEARCH_WINDOW_IN_SECS LAP_TIME_SEARCH_WINDOW_IN_SECS
-                        Search window for lap time.
-  --render-config-file RENDER_CONFIG_FILE
-                        Render config file to determine video render style
-```
+[![Fat Cake - Hawk Hill - August 22, 2023](https://img.youtube.com/vi/AgSG2Q-ejGk/0.jpg)](https://www.youtube.com/watch?v=AgSG2Q-ejGk)
