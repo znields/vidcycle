@@ -92,6 +92,7 @@ class GarminCoordinate(Coordinate):
         altitude: Optional[float] = None,
         heart_rate: Optional[int] = None,
         speed: Optional["Speed"] = None,
+        enhanced_speed: Optional["Speed"] = None,
         position_lat: Optional[int] = None,
         position_long: Optional[int] = None,
         power: Optional[int] = None,
@@ -111,6 +112,7 @@ class GarminCoordinate(Coordinate):
         self.distance = distance
         self.altitude = altitude
         self.speed = speed
+        self.enhanced_speed = enhanced_speed
         self.heart_rate = heart_rate
         self.temperature = temperature
         self.power = power
@@ -124,6 +126,7 @@ class GarminCoordinate(Coordinate):
             self.temperature,
             self.heart_rate,
             self.speed,
+            self.enhanced_speed,
             self.position_lat,
             self.position_long,
             self.power,
@@ -325,6 +328,7 @@ class GarminSegment(Segment):
             message = {
                 **message,
                 "speed": Speed(meters_per_second=message.get("speed", None)),
+                "enhanced_speed": Speed(meters_per_second=message.get("enhanced_speed", None)),
             }
             coordinates.append(GarminCoordinate(**message))
 
