@@ -30,15 +30,28 @@ Welcome to the easy step-by-step installation process for VidCycle, Let's get yo
 #### Step 4: Ready, Set, Go!
 - **You're All Set!**: Congratulations, you've successfully installed VidCycle! You're now ready to start adding awesome data overlays to your cycling videos.
 
-## Usage
+## VidCycle Usage Guide
 
-1. Begin recording a video on your camera of choice and make sure that the time on your camera is correctly set.
-2. While the video is recording press the lap button on your Garmin bike computer.
-3. Ensure that your camera microphone can hear the beep noise that plays from the Garmin computer so that you can specify this during rendering. The moment you press the lap button will be the "action" sync point to align your Garmin file and your video.
-4. Finish your recording and bike ride and load the video files and the Garmin FIT file on to your computer.
-5. Run `$ python3 main.py` specifying the parameters so that the program can align your video with the lap time that you marked on the Garmin computer. If you need help understanding the params, run `$ python3 main.py --help`.
-6. Wait for the program to finish running and enjoy your video.
+Here's a clear and simple guide to help you create those amazing videos with data overlays. Let's dive in!
+
+#### Step 1: Start Your Journey
+- **Record Your Ride**: Use any camera you like. Just make sure the time on your camera is correctly set to match real-world time.
+
+#### Step 2: Mark Your Start Moments
+- **Use the Lap Button**: While recording, press the lap button on your Garmin bike computer whenever you want to highlight a specific moment.
+- **Catch the Beep**: Ensure your camera's microphone can pick up the beep from your Garmin. This beep is crucial as it serves as the 'action' sync point to align your Garmin data with your video.
+
+#### Step 3: Save Your Adventure
+- **Transfer Files to Your Computer**: After your ride, load both the video files and the Garmin FIT file onto your computer.
+
+#### Step 4: Run VidCycle
+- **Align and Process**: Execute `python3 main.py` with the necessary parameters to align your video with the lap times from your Garmin. Need help with parameters? Just run `python3 main.py --help` for guidance.
+
+#### Step 5: Enjoy the Result
+- **Relive Your Ride**: After the program finishes processing, sit back and enjoy your cycling journey with all the key data beautifully integrated into your video.
 
 ## Example Video
+
+Here's an example video that gives you an idea of what you can create.
 
 [![Fat Cake - Hawk Hill - August 22, 2023](https://img.youtube.com/vi/AgSG2Q-ejGk/0.jpg)](https://www.youtube.com/watch?v=AgSG2Q-ejGk)
