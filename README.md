@@ -7,7 +7,7 @@
 3. Install the required Python packages by running `pip install -r requirements.txt`.
 4. You're good to go!
 
-### Usage
+## Usage
 
 1. Begin recording a video on your camera of choice and make sure that the time on your camera is correctly set.
 2. While the video is recording press the lap button on your Garmin bike computer.
@@ -16,6 +16,6 @@
 5. Run `$ python3 main.py` specifying the parameters so that the program can align your video with the lap time that you marked on the Garmin computer.
 6. Wait for the program to finish running and enjoy your video.
 
-### Example Video
+## Example Video
 
 [![Fat Cake - Hawk Hill - August 22, 2023](https://img.youtube.com/vi/AgSG2Q-ejGk/0.jpg)](https://www.youtube.com/watch?v=AgSG2Q-ejGk)
