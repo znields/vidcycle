@@ -1,6 +1,6 @@
 {
-    "videoNumberOfThreads": 96,
-    "panelNumberOfThreads": 116,
+    "videoNumberOfThreads": 48,
+    "panelNumberOfThreads": 48,
     "panelWidth": 0.2,
     "stats": {
         "height": 0.7,

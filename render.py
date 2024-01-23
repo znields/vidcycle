@@ -10,7 +10,7 @@ from multiprocessing import pool
 import os
 import shutil
 import ffmpeg
-from matplotlib import font_manager
+from matplotlib import font_manager, use
 
 
 STATS_LABEL_FONT_SIZE = 70
@@ -148,6 +148,7 @@ class PanelRenderer(Renderer):
 
     def make_figure(self) -> None:
         width, height = self.video.get_resolution()
+        use('Agg')
         figure = plt.figure(
             frameon=False,
             dpi=100,
