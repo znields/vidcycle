@@ -13,7 +13,7 @@
 2. While the video is recording press the lap button on your Garmin bike computer.
 3. Ensure that your camera microphone can hear the beep noise that plays from the Garmin computer so that you can specify this during rendering. The moment you press the lap button will be the "action" sync point to align your Garmin file and your video.
 4. Finish your recording and bike ride and load the video files and the Garmin FIT file on to your computer.
-5. Run `$ python3 main.py` specifying the parameters so that the program can align your video with the lap time that you marked on the Garmin computer. If you need help understanding the params run `$ python3 main.py --help`.
+5. Run `$ python3 main.py` specifying the parameters so that the program can align your video with the lap time that you marked on the Garmin computer. If you need help understanding the params, run `$ python3 main.py --help`.
 6. Wait for the program to finish running and enjoy your video.
 
 ## Example Video
