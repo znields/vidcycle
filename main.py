@@ -19,38 +19,39 @@ parser.add_argument(
 )
 parser.add_argument(
     "--video-length-in-secs",
-    help="How many seconds the video should last",
+    help="How many seconds the rendered video should last",
     type=float,
     default=None,
 )
 parser.add_argument(
     "--video-offset-start-in-secs",
-    help="How many seconds into the video should the output start",
+    help="How many seconds into the input video should the output video start",
     default=0.0,
     type=float,
 )
 parser.add_argument(
     "--video-output-path",
-    help="Video output path. If none then will preview video.",
+    help="The output path for the video you will render",
     type=str,
     required=True,
 )
 parser.add_argument(
     "--video-lap-time-in-secs",
-    help="Lap time in seconds from the video.",
+    help="How long into the input video until you pressed the Garmin lap button",
     required=True,
     type=float,
 )
 parser.add_argument(
     "--lap-time-search-window-in-secs",
-    help="Search window for lap time.",
+    help="""The window used to search for the lap button press moment in the Garmin file. 
+    This helps deal with misalignemnt in clock times between your camera and your Garmin computer""",
     required=True,
     type=float,
     nargs=2,
 )
 parser.add_argument(
     "--render-config-file",
-    help="Render config file to determine video render style",
+    help="Render config file to determine video render style and number of threads to use on the computer doing the rendering",
     required=True,
     type=str,
 )
