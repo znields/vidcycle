@@ -1,4 +1,4 @@
-# Vidcycle: Enhance Your Cycling Videos with GPS Data Overlay
+# <img src="https://raw.githubusercontent.com/isaiahnields/vidcycle/master/logo.png" width="48"> Vidcycle: Enhance Your Cycling Videos with GPS Data Overlay
 
 Welcome to VidCycle, the innovative Python program designed for cycling enthusiasts and professionals alike. VidCycle transforms your cycling experiences by seamlessly integrating Garmin GPS bike computer data with your video footage. The tool overlays vital cycling metrics such as speed, elevation, distance, and heart rate onto your videos, creating an immersive and informative visual experience. 
 
