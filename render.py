@@ -13,8 +13,6 @@ import ffmpeg
 from matplotlib import font_manager, use
 
 
-STATS_LABEL_FONT_SIZE = 70
-STATS_FONT_SIZE = 200
 STATS_FONT = font_manager.FontProperties(fname="fonts/Orbitron-Black.ttf")
 
 
@@ -41,6 +39,8 @@ class ThreadedPanelRenderer(Renderer):
         stats_x_position: float,
         stats_y_range: Tuple[float, float],
         stat_label_y_position_delta: float,
+        font_size: int,
+        label_font_size: int,
         stats_opacity: float,
         num_threads: int,
     ) -> None:
@@ -60,6 +60,8 @@ class ThreadedPanelRenderer(Renderer):
         self.stats_x_position = stats_x_position
         self.stats_y_range = stats_y_range
         self.stat_label_y_position_delta = stat_label_y_position_delta
+        self.font_size = font_size
+        self.label_font_size = label_font_size
         self.stats_opacity = stats_opacity
         self.num_threads = num_threads
 
@@ -118,6 +120,8 @@ class PanelRenderer(Renderer):
         stats_x_position: float,
         stats_y_range: Tuple[float, float],
         stat_label_y_position_delta: float,
+        font_size: int,
+        label_font_size: int,
         stats_opacity: float,
         **_,
     ) -> None:
@@ -137,6 +141,8 @@ class PanelRenderer(Renderer):
         self.stats_x_position = stats_x_position
         self.stats_y_range = stats_y_range
         self.stat_label_y_position_delta = stat_label_y_position_delta
+        self.font_size = font_size
+        self.label_font_size = label_font_size
         self.stats_opacity = stats_opacity
         self.make_figure()
 
@@ -232,7 +238,7 @@ class PanelRenderer(Renderer):
                 y_position,
                 value,
                 color="white",
-                fontsize=STATS_FONT_SIZE,
+                fontsize=self.font_size,
                 fontproperties=STATS_FONT,
             )
             label_text = self.stats_axis.text(
@@ -240,7 +246,7 @@ class PanelRenderer(Renderer):
                 y_position + self.stat_label_y_position_delta,
                 label,
                 color="white",
-                fontsize=STATS_LABEL_FONT_SIZE,
+                fontsize=self.label_font_size,
                 fontproperties=STATS_FONT,
             )
             stat_text.set_alpha(self.stats_opacity)

@@ -135,6 +135,8 @@ if __name__ == "__main__":
         stats_x_position=render_config["stats"]["xPosition"],
         stats_y_range=render_config["stats"]["yPositionRange"],
         stat_label_y_position_delta=render_config["stats"]["statToLabelYDistance"],
+        font_size=render_config["stats"]["fontSize"],
+        label_font_size=render_config["stats"]["labelFontSize"],
         stats_opacity=render_config["stats"]["opacity"],
     ).render()
 
