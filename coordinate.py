@@ -306,7 +306,7 @@ class GarminSegment(Segment):
         for lap in self.laps:
             if (
                 lap.lap_trigger == "manual"
-                and start_time < lap.timestamp < end_time
+                and start_time < lap.start_time < end_time
             ):
                 return lap
 
@@ -371,8 +371,8 @@ class GarminSegmentIterator(SegmentIterator):
 
 
 class GarminLap:
-    def __init__(self, timestamp: datetime, lap_trigger: str, **_kwargs):
-        self.timestamp = timestamp
+    def __init__(self, start_time: datetime, lap_trigger: str, **_kwargs):
+        self.start_time = start_time
         self.lap_trigger = lap_trigger
 
 

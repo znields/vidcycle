@@ -90,7 +90,7 @@ if __name__ == "__main__":
 
     print("Available lap timestamps:\n")
     print(
-        "\n".join([str(lap.timestamp) for lap in garmin_segment.get_manual_laps()])
+        "\n".join([str(lap.start_time) for lap in garmin_segment.get_manual_laps()])
         + "\n"
     )
     print(f"Searching for Garmin lap time between {left_search} and {right_search}.")
@@ -102,9 +102,9 @@ if __name__ == "__main__":
         )
         exit()
     else:
-        print(f"Found Garmin lap time at {garmin_lap.timestamp}.\n")
+        print(f"Found Garmin lap time at {garmin_lap.start_time}.\n")
 
-    garmin_lap_time = garmin_lap.timestamp
+    garmin_lap_time = garmin_lap.start_time
     go_pro_lap_time = video.get_start_time() + lap_time
 
     garmin_time_shift = garmin_lap_time - go_pro_lap_time
