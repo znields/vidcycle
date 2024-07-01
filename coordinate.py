@@ -305,7 +305,7 @@ class GarminSegment(Segment):
     ) -> Optional["GarminLap"]:
         for lap in self.laps:
             if (
-                lap.lap_trigger == "manual"
+                (lap.lap_trigger == "manual" or lap.lap_trigger == "session_end")
                 and start_time < lap.start_time < end_time
             ):
                 return lap
@@ -313,7 +313,8 @@ class GarminSegment(Segment):
         return None
 
     def get_manual_laps(self) -> List["GarminLap"]:
-        return [lap for lap in self.laps if lap.lap_trigger == "manual"]
+        return [lap for lap in self.laps 
+                if lap.lap_trigger == "manual" or lap.lap_trigger == "session_end"]
 
     @staticmethod
     def load_from_fit_file(path: str) -> "GarminSegment":
