@@ -54,4 +54,4 @@ Here's a clear and simple guide to help you create those amazing videos with dat
 
 Here's an example video that gives you an idea of what you can create.
 
-[![Fat Cake - Hawk Hill - August 22, 2023](https://img.youtube.com/vi/AgSG2Q-ejGk/0.jpg)](https://www.youtube.com/watch?v=AgSG2Q-ejGk)
+[![Fat Cake - Hawk Hill - August 22, 2023](https://img.youtube.com/vi/KuYK_RrEdTI/0.jpg)](https://www.youtube.com/watch?v=KuYK_RrEdTI)
